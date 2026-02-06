@@ -4,7 +4,6 @@
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
 ![CodeQL](https://img.shields.io/badge/CodeQL-supported-red)
 ![OWASP](https://img.shields.io/badge/OWASP-Benchmark-important)
-![Research](https://img.shields.io/badge/security-research-platform-purple)
 ![Status](https://img.shields.io/badge/status-active-success)
 
 ---
