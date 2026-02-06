@@ -224,7 +224,9 @@ bash create.sh
 ```bash
 codeql database create owasp-benchmark-db \
   --language=java \
-  --source-root=dataset/benchmark
+  --source-root=dataset/benchmark \
+  --command="mvn clean package -DskipTests -Dspotless.skip=true"
+
 ```
 
 ---
