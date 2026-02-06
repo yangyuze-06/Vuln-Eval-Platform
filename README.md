@@ -3,7 +3,9 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
 ![CodeQL](https://img.shields.io/badge/CodeQL-supported-red)
-![Static Analysis](https://img.shields.io/badge/static-analysis-framework-orange)
+![OWASP](https://img.shields.io/badge/OWASP-Benchmark-important)
+![Research](https://img.shields.io/badge/security-research-platform-purple)
+![Status](https://img.shields.io/badge/status-active-success)
 
 ---
 
@@ -341,11 +343,25 @@ reports/
 
 ---
 
-# 📄 License
+# 📄 许可证
 
-This project is licensed under the MIT License.
+本项目基于 MIT 开源许可证发布
+您可以在遵守许可证条款的前提下自由使用、修改和分发本项目
+完整许可证内容请参见 [LICENSE](LICENSE) 文件
 
 ---
 
 ## 👨‍💻 作者：
 L1ngSh1
+
+---
+
+## ✍️ 作者的碎碎念
+
+本项目最初源于作者在安全研究实习期间，对不同静态分析工具评测方式缺乏统一标准的思考。
+SECURITY-EVAL-LAB 的目标是构建一个结构化、可扩展、可复现的漏洞检测评测框架，使研究者能够更加系统地分析静态分析工具在真实漏洞数据集上的检测表现。
+该项目既是一个研究实验平台，也记录了作者在安全研究与工程实践中的探索过程。
+项目目前仍在持续演进中，欢迎对静态分析与漏洞检测感兴趣的研究者参与改进、提出建议或贡献规则。
+如果本项目能够在安全研究或教学中提供帮助，将是作者非常欣慰的事情。
+
+---
