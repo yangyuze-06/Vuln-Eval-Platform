@@ -1,0 +1,178 @@
+{
+  "CWE-22": {
+    "benchmark_total": 268,
+    "real_positive": 133,
+    "tools": {
+      "codeql": {
+        "tp": 133,
+        "fp": 66,
+        "fn": 0,
+        "precision": 0.6683,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.4889,
+        "fdr": 0.3317
+      }
+    }
+  },
+  "CWE-78": {
+    "benchmark_total": 251,
+    "real_positive": 126,
+    "tools": {
+      "codeql": {
+        "tp": 126,
+        "fp": 64,
+        "fn": 0,
+        "precision": 0.6632,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.512,
+        "fdr": 0.3368
+      }
+    }
+  },
+  "CWE-79": {
+    "benchmark_total": 455,
+    "real_positive": 246,
+    "tools": {
+      "codeql": {
+        "tp": 246,
+        "fp": 90,
+        "fn": 0,
+        "precision": 0.7321,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.4306,
+        "fdr": 0.2679
+      }
+    }
+  },
+  "CWE-89": {
+    "benchmark_total": 504,
+    "real_positive": 272,
+    "tools": {
+      "codeql": {
+        "tp": 272,
+        "fp": 207,
+        "fn": 0,
+        "precision": 0.5678,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.8922,
+        "fdr": 0.4322
+      }
+    }
+  },
+  "CWE-90": {
+    "benchmark_total": 59,
+    "real_positive": 27,
+    "tools": {
+      "codeql": {
+        "tp": 27,
+        "fp": 13,
+        "fn": 0,
+        "precision": 0.675,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.4062,
+        "fdr": 0.325
+      }
+    }
+  },
+  "CWE-327": {
+    "benchmark_total": 246,
+    "real_positive": 130,
+    "tools": {
+      "codeql": {
+        "tp": 130,
+        "fp": 27,
+        "fn": 0,
+        "precision": 0.828,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.2328,
+        "fdr": 0.172
+      }
+    }
+  },
+  "CWE-328": {
+    "benchmark_total": 235,
+    "real_positive": 128,
+    "tools": {
+      "codeql": {
+        "tp": 128,
+        "fp": 33,
+        "fn": 0,
+        "precision": 0.795,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.3084,
+        "fdr": 0.205
+      }
+    }
+  },
+  "CWE-330": {
+    "benchmark_total": 493,
+    "real_positive": 218,
+    "tools": {
+      "codeql": {
+        "tp": 218,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.0,
+        "fdr": 0.0
+      }
+    }
+  },
+  "CWE-501": {
+    "benchmark_total": 126,
+    "real_positive": 83,
+    "tools": {
+      "codeql": {
+        "tp": 83,
+        "fp": 24,
+        "fn": 0,
+        "precision": 0.7757,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.5581,
+        "fdr": 0.2243
+      }
+    }
+  },
+  "CWE-614": {
+    "benchmark_total": 67,
+    "real_positive": 36,
+    "tools": {
+      "codeql": {
+        "tp": 36,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.0,
+        "fdr": 0.0
+      }
+    }
+  },
+  "CWE-643": {
+    "benchmark_total": 35,
+    "real_positive": 15,
+    "tools": {
+      "codeql": {
+        "tp": 15,
+        "fp": 7,
+        "fn": 0,
+        "precision": 0.6818,
+        "recall": 1.0,
+        "fnr": 0.0,
+        "fpr": 0.35,
+        "fdr": 0.3182
+      }
+    }
+  }
+}
