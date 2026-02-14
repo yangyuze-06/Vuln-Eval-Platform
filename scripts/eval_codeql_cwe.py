@@ -70,6 +70,7 @@ def main(args=None):
     fnr = fn / rp if rp > 0 else 0.0
     fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0   
     fdr = fp / (tp + fp) if (tp + fp) > 0 else 0.0
+    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
     
     fnr_label = "（全部命中）" if fnr == 0 else ""
 
@@ -88,7 +89,8 @@ def main(args=None):
     print(f"Recall                : {recall:.4f}")
     print(f"FNR (漏报率)          : {fnr:.4f} {fnr_label}")
     print(f"FPR (误报率)          : {fpr:.4f}")
-    print(f"FDR (误检率)          : {fpr:.4f}")
+    print(f"FDR (误检率)          : {fdr:.4f}")
+    print(f"F1 分数              : {f1:.4f}")
 
     print("\n[Sample FN cases]")
     for name in list(FN)[:10]:

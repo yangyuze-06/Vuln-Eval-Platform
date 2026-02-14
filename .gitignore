@@ -15,14 +15,24 @@ venv/
 env/
 
 ############################
-# CodeQL / CodeFuse
+# CodeQL / CodeFuse databases
 ############################
 codeql-db/
 codefuse-db/
-*.sarif
 
 ############################
-# Maven
+# SARIF results (raw analysis output)
+############################
+experiments/*/results/*/*.sarif
+
+############################
+# Temporary experiment outputs
+############################
+experiments/*/logs/
+experiments/*/results/*/*.csv
+
+############################
+# Maven build
 ############################
 dataset/benchmark/target/
 
@@ -32,9 +42,7 @@ dataset/benchmark/target/
 *.log
 
 ############################
-# OS
+# OS files
 ############################
 .DS_Store
 Thumbs.db
-experiments/*/logs/
-experiments/*/results/

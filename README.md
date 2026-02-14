@@ -1,10 +1,17 @@
-# 🔐 SECURITY-EVAL-LAB
+# Vuln-Eval-Platform 🔐
+### Security Evaluation Lab for Static Analysis Tools
+
 
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-active-success)
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
+![JDK](https://img.shields.io/badge/JDK-17+-orange)
 ![CodeQL](https://img.shields.io/badge/CodeQL-supported-red)
 ![OWASP](https://img.shields.io/badge/OWASP-Benchmark-important)
-![Status](https://img.shields.io/badge/status-active-success)
+![Security Research](https://img.shields.io/badge/security-research-blue)
+![Evaluation](https://img.shields.io/badge/framework-evaluation-important)
+![Debut Project](https://img.shields.io/badge/project-debut-blueviolet)
+![Created by L1ngSh1](https://img.shields.io/badge/Created%20by-L1ngSh1-purple)
 
 ---
 
@@ -25,6 +32,37 @@
 提供工程化、可扩展的漏洞检测评测平台。
 
 ⚠ 本项目主要用于安全研究与工具评测实验。
+
+---
+
+## 🆕 版本说明
+
+### v1.1（当前版本）
+
+- 新增一键评估入口 `run_eval.sh`
+- 自动检测各 CWE 实验 SARIF 文件
+- 新增scripts脚本
+- 自动汇总 Precision / Recall / F1 等指标
+- 自动生成性能可视化图表
+- 自动输出英文报告与中文报告
+- 完整评估流程无需手动逐脚本执行
+
+### v1.0（平台基础版本）
+
+SECURITY-EVAL-LAB 的首个完整版本，
+实现了从 0 到 1 的漏洞检测评测平台搭建。
+
+- 设计统一静态分析评测架构
+- 接入 OWASP Benchmark 数据集
+- 实现 SARIF 结果标准化处理流程
+- 构建单 CWE 自动评测与统计机制
+- 实现跨 CWE 汇总指标计算模块
+- 建立可复现实验目录与执行流程
+- 构建规则与实验结果的工程化管理体系
+
+该版本使平台具备完整的静态分析工具评测能力，
+能够独立支撑静态分析工具检测效果的系统化实验。
+
 
 ---
 
@@ -91,6 +129,7 @@ SECURITY-EVAL-LAB
 │
 ├── reports                    # 实验结果统计输出
 │
+├── run_eval.sh                # ⭐ v1.1 一键评估入口
 └── requirements.txt
 
 ```
@@ -113,7 +152,8 @@ experiments/README.md
 
 - Python 3.8+
 - CodeQL CLI
-- Sparrow / CodeFuse CLI
+- Sparrow / CodeFuse-Query CLI
+- Java JDK 17+
 
 ---
 
@@ -167,14 +207,14 @@ deactivate
 
 ## 🔧 安装 CodeFuse / Sparrow
 
-请参考对应工具官方安装说明。
+[https://github.com/codefuse-ai/CodeFuse-Query](https://github.com/codefuse-ai/CodeFuse-Query)
 
 ---
 
 # ⚡ Quick Start
 
 ```bash
-git clone https://github.com/L1ngSh1/SECURITY-EVAL-LAB.git
+git clone https://github.com/yangyuze-06/SECURITY-EVAL-LAB.git
 cd SECURITY-EVAL-LAB
 
 python3 -m venv .venv
@@ -184,6 +224,33 @@ pip install -r requirements.txt
 
 cd experiments
 bash create.sh
+```
+
+---
+
+## ⚡ 一键评估（v1.1 推荐）
+
+在完成检测并生成 SARIF 文件后：
+
+```bash
+./run_eval.sh
+```
+
+该命令将自动：
+
+* 检测 SARIF 文件是否齐全
+* 汇总各 CWE 指标
+* 生成性能可视化图
+* 输出英文评估报告
+* 输出中文评估报告
+
+结果输出位置：
+
+```
+reports/data/metrics.json
+reports/figs/
+reports/report.md
+reports/report_zh.md
 ```
 
 ---
@@ -227,7 +294,6 @@ codeql database create owasp-benchmark-db \
   --language=java \
   --source-root=dataset/benchmark \
   --command="mvn clean package -DskipTests -Dspotless.skip=true"
-
 ```
 
 ---
@@ -236,9 +302,9 @@ codeql database create owasp-benchmark-db \
 
 ```bash
 codeql database analyze owasp-benchmark-db \
-  rules/codeql-query/CWE-089 \
+  rules/codeql-query/CWE-xxx \
   --format=sarifv2.1.0 \
-  --output=experiments/cwe-089/results/codeql/cwe089.sarif
+  --output=experiments/cwe-xxx/results/codeql/cwexxx.sarif
 ```
 
 ---
@@ -252,6 +318,7 @@ sparrow database create \
   -s dataset/benchmark/src/main/java \
   -lang java \
   -o dataset/codefuse-db
+  -overwrite
 ```
 
 ---
@@ -262,14 +329,14 @@ sparrow database create \
 sparrow query run \
   --database dataset/codefuse-db \
   --query rules/codefuse-query/CWE-089 \
-  --output experiments/cwe-089/results/codefuse-query/cwe089.sarif
+  --output experiments/cwe-xxx/results/codefuse-query/cwexxx.sarif
 ```
 
 ---
 
 # 📁 结果分析
 
-## SARIF 转 CSV
+## SARIF 转 CSV（v1.0 手动）
 
 ```bash
 python scripts/sarif_to_csv.py
@@ -289,6 +356,14 @@ python scripts/eval_codeql_cwe.py
 
 ```bash
 python scripts/aggregate_results.py
+```
+
+---
+
+## ⭐ 自动评估流程（v1.1 推荐）
+
+```bash
+./run_eval.sh
 ```
 
 实验统计结果将输出至：
@@ -322,6 +397,9 @@ reports/
 * 支持自动指标统计
 * 支持实验复现
 * 支持规则模块化管理
+* 支持一键自动评估 pipeline（v1.1）
+* 支持自动生成中英双语报告
+* 支持性能可视化分析
 
 ---
 
@@ -351,6 +429,7 @@ reports/
 ---
 
 ## 👨‍💻 作者：
+
 L1ngSh1
 
 ---
@@ -358,9 +437,13 @@ L1ngSh1
 ## ✍️ 作者的碎碎念
 
 本项目最初源于作者在安全研究实习期间，对不同静态分析工具评测方式缺乏统一标准的思考。
-SECURITY-EVAL-LAB 的目标是构建一个结构化、可扩展、可复现的漏洞检测评测框架，使研究者能够更加系统地分析静态分析工具在真实漏洞数据集上的检测表现。
+
+Vuln-Eval-Platform 的目标是构建一个结构化、可扩展、可复现的漏洞检测评测框架，使研究者能够更加系统地分析静态分析工具在真实漏洞数据集上的检测表现。
+
 该项目既是一个研究实验平台，也记录了作者在安全研究与工程实践中的探索过程。
+
 项目目前仍在持续演进中，欢迎对静态分析与漏洞检测感兴趣的研究者参与改进、提出建议或贡献规则。
+
 如果本项目能够在安全研究或教学中提供帮助，将是作者非常欣慰的事情。
 
 ---

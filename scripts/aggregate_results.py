@@ -7,7 +7,7 @@ from collections import defaultdict
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXPECTED_FILE = os.path.join(BASE_DIR, "expectedresults-1.2.csv")
 EXPERIMENT_DIR = os.path.join(BASE_DIR, "experiments")
-OUTPUT_JSON = os.path.join(BASE_DIR, "reports", "data", "summery.json")
+OUTPUT_JSON = os.path.join(BASE_DIR, "reports", "data", "metrics.json")
 
 
 # ----------------------------
@@ -70,8 +70,7 @@ def evaluate_tool(gt, cwe_key, csv_path):
     fnr = fn / len(rp) if rp else 0
     fpr = fp / len(rn) if rn else 0
     fdr = fp / (tp + fp) if tp + fp else 0
-
-
+    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) else 0
 
     return {
         "tp": tp,
@@ -81,8 +80,8 @@ def evaluate_tool(gt, cwe_key, csv_path):
         "recall": round(recall, 4),
         "fnr": round(fnr, 4),
         "fpr": round(fpr, 4),
-        "fdr": round(fdr, 4)
-        
+        "fdr": round(fdr, 4),
+        "f1": round(f1, 4),
     }
 
 
@@ -110,33 +109,40 @@ def normalize_cwe(folder_name):
     num = int(match.group(1))
     return f"CWE-{num}"
 
+
 # ----------------------------
 # Main
 # ----------------------------
 def main():
     gt = load_ground_truth()
     metrics = {}
+
+    # overall 累计（按 tool 分开）
+    overall_totals = {
+        "codeql": {"tp": 0, "fp": 0, "fn": 0},
+        "codefuse": {"tp": 0, "fp": 0, "fn": 0}
+    }
+
     print("[DEBUG] scanning experiments folder")
-    
+
     for cwe_folder in os.listdir(EXPERIMENT_DIR):
         folder_path = os.path.join(EXPERIMENT_DIR, cwe_folder)
-        
+
         if not os.path.isdir(folder_path):
             continue
+
         cwe_key = normalize_cwe(cwe_folder)
-        
         if not cwe_key or cwe_key not in gt:
             continue
-        
+
         print(f"[DEBUG] processing {cwe_key}")
+
         codeql_dir = os.path.join(folder_path, "results", "codeql")
-        
         codefuse_dir = os.path.join(folder_path, "results", "codefuse")
-        
+
         codeql_csv = find_csv(codeql_dir)
-        
         codefuse_csv = find_csv(codefuse_dir)
-        
+
         metrics[cwe_key] = {
             "benchmark_total": len(gt[cwe_key]["rp"]) + len(gt[cwe_key]["rn"]),
             "real_positive": len(gt[cwe_key]["rp"]),
@@ -144,15 +150,55 @@ def main():
         }
 
         if codeql_csv:
-            metrics[cwe_key]["tools"]["codeql"] = evaluate_tool(gt, cwe_key, codeql_csv)
+            result = evaluate_tool(gt, cwe_key, codeql_csv)
+            metrics[cwe_key]["tools"]["codeql"] = result
+
+            overall_totals["codeql"]["tp"] += result["tp"]
+            overall_totals["codeql"]["fp"] += result["fp"]
+            overall_totals["codeql"]["fn"] += result["fn"]
 
         if codefuse_csv:
-            metrics[cwe_key]["tools"]["codefuse"] = evaluate_tool(gt, cwe_key, codefuse_csv)
+            result = evaluate_tool(gt, cwe_key, codefuse_csv)
+            metrics[cwe_key]["tools"]["codefuse"] = result
 
-    # ⭐ 按 CWE 数字排序
+            overall_totals["codefuse"]["tp"] += result["tp"]
+            overall_totals["codefuse"]["fp"] += result["fp"]
+            overall_totals["codefuse"]["fn"] += result["fn"]
+
+    # ----------------------------
+    # 添加 OVERALL
+    # ----------------------------
+    metrics["OVERALL"] = {"tools": {}}
+
+    for tool, vals in overall_totals.items():
+        tp = vals["tp"]
+        fp = vals["fp"]
+        fn = vals["fn"]
+
+        precision = tp / (tp + fp) if tp + fp else 0
+        recall = tp / (tp + fn) if tp + fn else 0
+        f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) else 0
+
+        metrics["OVERALL"]["tools"][tool] = {
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "precision": round(precision, 4),
+            "recall": round(recall, 4),
+            "f1": round(f1, 4)
+        }
+
+    # ----------------------------
+    # 排序 CWE（OVERALL 放最后）
+    # ----------------------------
     sorted_metrics = dict(
-        sorted(metrics.items(), key=lambda x: int(x[0].split("-")[1]))
+        sorted(
+            {k: v for k, v in metrics.items() if k != "OVERALL"}.items(),
+            key=lambda x: int(x[0].split("-")[1])
+        )
     )
+
+    sorted_metrics["OVERALL"] = metrics["OVERALL"]
 
     os.makedirs(os.path.dirname(OUTPUT_JSON), exist_ok=True)
 
@@ -164,3 +210,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+#有改动
