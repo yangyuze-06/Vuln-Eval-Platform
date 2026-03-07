@@ -1,0 +1,47 @@
+// script
+use coref::java::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// 不要传 string 参数，直接对节点做谓词（避免 ungrounded t）
+fn is_source_stmt(s: ExpressionStatement) -> bool {
+    let (t = s.getPrintableText()) {
+        return
+            t.contains(".getValue(") ||
+            t.contains(".getParameter(") ||
+            t.contains(".getParameterValues(") ||
+            t.contains(".getHeader(") ||
+            t.contains(".getHeaders(") ||
+            t.contains(".getQueryString(") ||
+            t.contains(".getPathInfo(") ||
+            t.contains(".getRequestURI(")
+    }
+}
+
+fn sources(file: string, line: int, stmt: string, methodSig: string) -> bool {
+    for (s in ExpressionStatement(default_java_db())) {
+
+        if (is_source_stmt(s)) {
+
+            let (loc = s.getLocation()) {
+                let (m = s.getEnclosingCallable()) {
+
+                    if (
+                        file = loc.getFile().getRelativePath() &&
+                        line = loc.getStartLineNumber() &&
+                        stmt = s.getPrintableText() &&
+                        methodSig = m.getSignature()
+                    ) {
+                        return true
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(sources())
+}

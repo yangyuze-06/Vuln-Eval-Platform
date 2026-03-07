@@ -1,0 +1,23 @@
+您好，开发者团队，我是一名正在学习 CodeFuse-Query 的大二学生，目前正在基于 Sparrow 2.1.0 尝试开发漏洞检测规则。
+我最近在尝试实现 CWE-022 相关规则（TaintPath 和 ZipSlip），并使用 OWASP Benchmark v1.2 作为测试数据。
+目前我已经能够：
+正常生成有关benchmark的2740个测试用例的 coref_java_src 数据库
+阅读 language/java/lib 中的 schema（Callable、CallableBinding、CallGraph 等）
+编写gdl,且排查一定的错误，但是对于schema的应用还是感到非常困惑
+
+我遇到了一个问题：
+我尝试通过 CallableBinding 构建 Source 到 Sink 的调用传播关系，例如：
+Source：
+HttpServletRequest.getParameter / getHeader
+Sink：
+java.io.File 构造函数、路径操作相关 API
+规则可以正常运行，但始终返回空结果。
+
+我目前不确定：
+CodeFuse-query 是否推荐通过 Callable 调用图来实现类似污点传播分析？
+是否存在官方推荐的漏洞检测规则示例可以参考？如像codeql里面的默认cwe checker（已上传，需要改一下名字）
+
+Sparrow 2.1.0 是否对规则建模方式有新的推荐实践？
+我已经编写了两个规则（TaintPath.gdl 和 ZipSlip.gdl），可以作为附件提供。
+想请教一下目前实现 CWE 类漏洞规则检测的一般思路。
+非常感谢。

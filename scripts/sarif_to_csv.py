@@ -2,7 +2,6 @@ import json
 import csv
 import re
 
-#替换你需要转换的SARIF文件路径和输出CSV文件路径
 SARIF_FILE = "experiments/cwe-328_328S/results/codeql/cwe328_328S.sarif"
 OUTPUT_CSV = "experiments/cwe-328_328S/results/codeql/cwe328_328S.csv"
 

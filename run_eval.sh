@@ -39,7 +39,7 @@ echo ""
 echo "[+] All SARIF files detected."
 echo ""
 
-# 激活虚拟环境（如果有）
+# 激活虚拟环境
 if [ -d "venv" ]; then
     echo "[+] Activating virtual environment"
     source venv/bin/activate

@@ -1,48 +1,72 @@
 ############################
-# VSCode
+# Editor / IDE
 ############################
 .vscode/
-
-############################
-# Python
-############################
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.venv/
-venv/
-env/
-
-############################
-# CodeQL / CodeFuse databases
-############################
-codeql-db/
-codefuse-db/
-
-############################
-# SARIF results (raw analysis output)
-############################
-experiments/*/results/*/*.sarif
-
-############################
-# Temporary experiment outputs
-############################
-experiments/*/logs/
-experiments/*/results/*/*.csv
-
-############################
-# Maven build
-############################
-dataset/benchmark/target/
-
-############################
-# Logs
-############################
-*.log
+.idea/
 
 ############################
 # OS files
 ############################
 .DS_Store
 Thumbs.db
+
+############################
+# Python
+############################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.python-version
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+############################
+# Local env / secrets
+############################
+.env
+.env.*
+*.local
+
+############################
+# Logs / temp
+############################
+*.log
+*.tmp
+*.temp
+
+############################
+# Java / Maven build output
+############################
+dataset/benchmark/target/
+
+############################
+# Static analysis databases
+############################
+codeql-db/
+codefuse-db/
+dataset/codeql-db/
+dataset/codefuse-db/
+
+############################
+# Experiment outputs
+############################
+experiments/*/logs/
+experiments/*/results/**/*.sarif
+experiments/*/results/**/*.csv
+experiments/*/results/**/Createsarif.txt
+
+############################
+# Generated reports
+############################
+reports/data/metrics.json
+reports/figs/
+reports/report.md
+reports/report_zh.md
