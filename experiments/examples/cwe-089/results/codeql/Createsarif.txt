@@ -1,1 +1,0 @@
-codeql database analyze owasp-benchmark-db   /home/ubuntu64/tools/codeql-repo/java/ql/src/Security/CWE/CWE-089   --format=sarifv2.1.0   --output=results/cwe89.sarif
