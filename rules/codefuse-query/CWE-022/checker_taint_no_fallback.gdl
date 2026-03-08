@@ -55,7 +55,6 @@ fn is_source_stmt(s: Statement) -> bool {
 //   enumeration.nextElement() -> header name
 //   request.getHeaders(headerName) -> Enumeration<headerValue>
 //   enumeration.nextElement() -> header value
-// Keep this explicit and local so we do not widen unrelated source/sink logic.
 fn is_header_name_enumeration_call(c: MethodAccessExpression) -> bool {
     let (t = c.getPrintableText()) {
         return t.contains(".getHeaderNames(")
@@ -352,18 +351,6 @@ fn cwe022_taint_findings(
                                 if (new_has_tainted_argument(n)) {
                                     return true
                                 }
-                                for (s in Statement(default_java_db())) {
-                                    if (is_source_stmt(s) && s.getEnclosingCallable().key_eq(owner)) {
-                                        let (srcLoc = s.getLocation()) {
-                                            if (
-                                                srcLoc.getFile().getRelativePath() = f &&
-                                                srcLoc.getStartLineNumber() <= l
-                                            ) {
-                                                return true
-                                            }
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
@@ -386,18 +373,6 @@ fn cwe022_taint_findings(
                             ) {
                                 if (call_has_tainted_argument(c)) {
                                     return true
-                                }
-                                for (s in Statement(default_java_db())) {
-                                    if (is_source_stmt(s) && s.getEnclosingCallable().key_eq(owner)) {
-                                        let (srcLoc = s.getLocation()) {
-                                            if (
-                                                srcLoc.getFile().getRelativePath() = f &&
-                                                srcLoc.getStartLineNumber() <= l
-                                            ) {
-                                                return true
-                                            }
-                                        }
-                                    }
                                 }
                             }
                         }

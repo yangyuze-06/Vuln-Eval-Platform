@@ -50,12 +50,6 @@ fn is_source_stmt(s: Statement) -> bool {
     }
 }
 
-// Header enumeration flow:
-//   request.getHeaderNames() -> Enumeration<headerName>
-//   enumeration.nextElement() -> header name
-//   request.getHeaders(headerName) -> Enumeration<headerValue>
-//   enumeration.nextElement() -> header value
-// Keep this explicit and local so we do not widen unrelated source/sink logic.
 fn is_header_name_enumeration_call(c: MethodAccessExpression) -> bool {
     let (t = c.getPrintableText()) {
         return t.contains(".getHeaderNames(")
@@ -264,7 +258,6 @@ fn is_tainted_expr(e: Expression) -> bool {
         return true
     }
 
-    // Explicit modeling for header enumeration-based flows.
     if (is_header_name_enumeration_source_expr(e)) {
         return true
     }
@@ -330,40 +323,63 @@ fn is_tainted_expr(e: Expression) -> bool {
 }
 
 // -------------------------
-// Findings
+// Findings Debug
 // -------------------------
-fn cwe022_taint_findings(
+fn new_has_receiver_taint_return_arg(n: NewExpression) -> bool {
+    for (elist in ExpressionList(default_java_db())) {
+        if (n.key_eq(elist.getParent())) {
+            for (rel in ExpressionListExpressionRelation(default_java_db())) {
+                if (rel.getExpressionList().key_eq(elist)) {
+                    for (call in MethodAccessExpression(default_java_db())) {
+                        if (rel.getExpression().key_eq(call) && call_has_tainted_receiver(call)) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn call_has_receiver_taint_return_arg(c: MethodAccessExpression) -> bool {
+    for (rel in ExpressionListExpressionRelation(default_java_db())) {
+        if (rel.getExpressionList().key_eq(c.getExpressionList())) {
+            for (call in MethodAccessExpression(default_java_db())) {
+                if (rel.getExpression().key_eq(call) && call_has_tainted_receiver(call)) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+fn cwe022_taint_no_fallback_debug(
     ruleId: string,
     sinkFile: string,
-    line: int
+    line: int,
+    reason: string
 ) -> bool {
-    // New-expression sinks
     for (n in NewExpression(default_java_db())) {
         if (is_path_sink_new(n)) {
             let (loc = n.getLocation()) {
-                let (owner = n.getEnclosingCallable()) {
-                    let (f = loc.getFile().getRelativePath()) {
-                        let (l = loc.getStartLineNumber()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-022" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
                             if (
-                                ruleId = "CWE-022" &&
-                                sinkFile = f &&
-                                line = l
+                                reason = "tainted_constructor_arg" &&
+                                new_has_tainted_argument(n)
                             ) {
-                                if (new_has_tainted_argument(n)) {
-                                    return true
-                                }
-                                for (s in Statement(default_java_db())) {
-                                    if (is_source_stmt(s) && s.getEnclosingCallable().key_eq(owner)) {
-                                        let (srcLoc = s.getLocation()) {
-                                            if (
-                                                srcLoc.getFile().getRelativePath() = f &&
-                                                srcLoc.getStartLineNumber() <= l
-                                            ) {
-                                                return true
-                                            }
-                                        }
-                                    }
-                                }
+                                return true
+                            }
+                            if (
+                                reason = "receiver_taint_to_return_taint" &&
+                                new_has_receiver_taint_return_arg(n)
+                            ) {
+                                return true
                             }
                         }
                     }
@@ -372,33 +388,27 @@ fn cwe022_taint_findings(
         }
     }
 
-    // Method-call sinks
     for (c in MethodAccessExpression(default_java_db())) {
         if (is_path_sink_call(c)) {
             let (loc = c.getLocation()) {
-                let (owner = c.getEnclosingCallable()) {
-                    let (f = loc.getFile().getRelativePath()) {
-                        let (l = loc.getStartLineNumber()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-022" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
                             if (
-                                ruleId = "CWE-022" &&
-                                sinkFile = f &&
-                                line = l
+                                reason = "tainted_call_arg" &&
+                                call_has_tainted_argument(c)
                             ) {
-                                if (call_has_tainted_argument(c)) {
-                                    return true
-                                }
-                                for (s in Statement(default_java_db())) {
-                                    if (is_source_stmt(s) && s.getEnclosingCallable().key_eq(owner)) {
-                                        let (srcLoc = s.getLocation()) {
-                                            if (
-                                                srcLoc.getFile().getRelativePath() = f &&
-                                                srcLoc.getStartLineNumber() <= l
-                                            ) {
-                                                return true
-                                            }
-                                        }
-                                    }
-                                }
+                                return true
+                            }
+                            if (
+                                reason = "receiver_taint_to_return_taint" &&
+                                call_has_receiver_taint_return_arg(c)
+                            ) {
+                                return true
                             }
                         }
                     }
@@ -409,5 +419,5 @@ fn cwe022_taint_findings(
 }
 
 fn main() {
-    output(cwe022_taint_findings())
+    output(cwe022_taint_no_fallback_debug())
 }
