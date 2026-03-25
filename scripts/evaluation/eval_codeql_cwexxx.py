@@ -9,7 +9,7 @@ sns.set_theme(style="whitegrid")  # 保留网格风格
 plt.rcParams["figure.dpi"] = 150
 plt.rcParams["font.size"] = 10
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 INPUT_JSON = BASE_DIR / "reports" / "data" / "summery.json"
 OUTPUT_DIR = BASE_DIR / "reports" / "figs"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

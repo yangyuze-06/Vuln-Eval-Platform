@@ -10,7 +10,7 @@ sns.set_theme(style="whitegrid")
 plt.rcParams["figure.dpi"] = 120
 plt.rcParams["font.size"] = 10
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 INPUT_JSON = BASE_DIR / "reports" / "data" / "metrics.json"
 OUTPUT_DIR = BASE_DIR / "reports" / "figs"
 
@@ -130,4 +130,3 @@ for bar in bars:
 plt.tight_layout()
 plt.savefig(OUTPUT_DIR / "overall_metrics.png", bbox_inches="tight")
 plt.close()
-

@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from datetime import date   # 用于自动生成日期
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 INPUT_JSON = BASE_DIR / "reports" / "data" / "metrics.json"
 
 OUTPUT_MD_EN = BASE_DIR / "reports" / "report.md"

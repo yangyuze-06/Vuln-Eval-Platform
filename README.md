@@ -17,7 +17,7 @@
 
 ## 📌 项目简介
 
-**SECURITY-EVAL-LAB** 是一个面向安全研究的静态分析评测框架，
+**Vuln-EVAL-LAB** 是一个面向安全研究的静态分析评测框架，
 用于统一评估不同漏洞检测工具在 **OWASP Benchmark 数据集** 上的检测能力。
 
 本项目支持：
@@ -41,7 +41,8 @@
 
 - 新增一键评估入口 `run_eval.sh`
 - 自动检测各 CWE 实验 SARIF 文件
-- 新增scripts脚本
+- `scripts/` 目录按功能拆分为 `converters/`、`evaluation/`、`reporting/`
+- 新增 CodeFuse JSON → CSV 转换脚本 `scripts/converters/codefuse_json_to_csv.py`
 - 自动汇总 Precision / Recall / F1 等指标
 - 自动生成性能可视化图表
 - 自动输出英文报告与中文报告
@@ -80,10 +81,12 @@ Detection Rules Execution
 (CodeQL / CodeFuse Query)
 │
 ▼
-SARIF Result Export
+Detection Result Export
+(CodeQL SARIF / CodeFuse JSON)
 │
 ▼
-SARIF → CSV Conversion
+Result Normalization
+(SARIF → CSV / JSON → CSV)
 │
 ▼
 Ground Truth Comparison
@@ -109,28 +112,41 @@ Evaluation Metrics Output
 
 ```
 
-SECURITY-EVAL-LAB
+Vuln-Eval-Lab
 │
-├── dataset
-│   └── benchmark              # OWASP Benchmark 数据集源码
+├── dataset                    # 数据集与分析数据库
+│   ├── benchmark              # OWASP Benchmark 源码
+│   │   ├── data
+│   │   ├── src
+│   │   └── target
+│   ├── codeql-db              # CodeQL 数据库与结果
+│   │      
+│   └── codefuse-db            # CodeFuse 数据库目录
 │
-├── rules
-│   ├── codeql-query           # CodeQL 检测规则
-│   └── codefuse-query         # CodeFuse 检测规则
+├── rules                      # 检测规则
+│   ├── codeql-query           # CodeQL 各 CWE 规则
+│   └── codefuse-query         # CodeFuse 各 CWE 规则
 │
-├── scripts                    # 实验评测脚本
-│   ├── sarif_to_csv.py
-│   ├── eval_codeql_cwe.py
-│   └── aggregate_results.py
+├── experiments                # 实验目录
+│   ├── cwe-022 ~ cwe-643      # 各 CWE 实验
+│   │   ├── eval
+│   │   ├── logs
+│   │   └── results
+│   └── examples               # 示例实验
 │
-├── experiments                # 实验执行目录
-│   ├── create.sh              # 实验目录自动生成脚本
-│   └── cwe-xxx                # 单 CWE 实验目录
+├── scripts                    # 脚本目录（按功能分类）
+│   ├── converters             # 结果格式转换
+│   ├── evaluation             # 指标评测与计算
+│   └── reporting              # 图表与报告生成
+├── reports                    # 结果输出
+│   ├── data
+│   └── figs
 │
-├── reports                    # 实验结果统计输出
-│
-├── run_eval.sh                # ⭐ v1.1 一键评估入口
-└── requirements.txt
+├── run_eval.sh                # 一键评估入口
+├── requirements.txt
+├── expectedresults-1.2.csv    # 基准期望结果
+├── LICENSE
+└── README.md
 
 ```
 
@@ -261,8 +277,8 @@ reports/report_zh.md
 
 1. 构建静态分析数据库
 2. 执行漏洞检测规则
-3. 导出 SARIF 检测结果
-4. SARIF 转 CSV
+3. 导出检测结果（CodeQL: SARIF，CodeFuse: JSON）
+4. 结果归一化为 CSV
 5. Ground Truth 对比
 6. 统计评测指标
 
@@ -317,7 +333,7 @@ codeql database analyze owasp-benchmark-db \
 sparrow database create \
   -s dataset/benchmark/src/main/java \
   -lang java \
-  -o dataset/codefuse-db
+  -o dataset/codefuse-db \
   -overwrite
 ```
 
@@ -327,36 +343,93 @@ sparrow database create \
 
 ```bash
 sparrow query run \
-  --database dataset/codefuse-db \
-  --query rules/codefuse-query/CWE-089 \
-  --output experiments/cwe-xxx/results/codefuse-query/cwexxx.sarif
+  -d dataset/codefuse-db \
+  -gdl rules/codefuse-query/CWE-022/checker_taint_no_fallback_debug.gdl \
+  -o experiments/cwe-022/results/codefuse-query
+```
+
+执行后会在输出目录生成：
+
+```text
+experiments/cwe-022/results/codefuse-query/checker_taint_no_fallback_debug.json
 ```
 
 ---
 
 # 📁 结果分析
 
-## SARIF 转 CSV（v1.0 手动）
+## CodeQL：SARIF 转 CSV
 
 ```bash
-python scripts/sarif_to_csv.py
+python scripts/converters/sarif_to_csv.py
 ```
 
 ---
 
-## 单 CWE 评测
+## CodeFuse：JSON 转 CSV
 
 ```bash
-python scripts/eval_codeql_cwe.py
+python scripts/converters/codefuse_json_to_csv.py \
+  experiments/cwe-022/results/codefuse-query/checker_taint_no_fallback_debug.json \
+  experiments/cwe-022/results/codefuse-query/cwe022_codefuse.csv \
+  --include-reason
 ```
 
 ---
 
-## 汇总统计结果
+## 单 CWE 评测（CodeFuse）
 
 ```bash
-python scripts/aggregate_results.py
+python scripts/evaluation/eval_codefuse_results.py \
+  --expected expectedresults-1.2.csv \
+  --results experiments/cwe-022/results/codefuse-query/cwe022_codefuse.csv \
+  --cwe CWE-022 \
+  --outdir experiments/cwe-022/eval/codefuse \
+  --format csv \
+  --fp-mode all_non_gt
 ```
+
+---
+
+## 汇总统计结果（多 CWE）
+
+```bash
+python scripts/evaluation/aggregate_results.py
+```
+
+---
+
+## 生成图表与报告
+
+```bash
+python scripts/reporting/plots_metrics.py
+python scripts/reporting/generate_report.py
+```
+
+---
+
+## 脚本完整说明
+
+每个脚本的终端/VSCode 详细用法见：
+
+```text
+scripts/README.md
+```
+
+---
+
+## 📝 本次改动同步
+
+- `rules/codefuse-query/CWE-022` 已收敛为主线规则与辅助定位脚本：
+  - `checker_taint_no_fallback.gdl`
+  - `checker_taint_no_fallback_debug.gdl`
+  - `sourcefinder.gdl`
+  - `sinkfinder.gdl`
+- 已验证运行 `checker_taint_no_fallback_debug.gdl`，结果输出到：
+  - `experiments/cwe-022/results/codefuse-query/checker_taint_no_fallback_debug.json`
+- 新增 JSON 转 CSV 工具脚本：
+  - `scripts/converters/codefuse_json_to_csv.py`
+- `scripts/README.md` 已补充每个脚本的中文终端示例和 VSCode 用法。
 
 ---
 

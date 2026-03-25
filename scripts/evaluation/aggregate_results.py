@@ -4,7 +4,7 @@ import json
 import re
 from collections import defaultdict
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EXPECTED_FILE = os.path.join(BASE_DIR, "expectedresults-1.2.csv")
 EXPERIMENT_DIR = os.path.join(BASE_DIR, "experiments")
 OUTPUT_JSON = os.path.join(BASE_DIR, "reports", "data", "metrics.json")
@@ -210,5 +210,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 

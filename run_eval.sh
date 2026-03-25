@@ -46,13 +46,13 @@ if [ -d "venv" ]; then
 fi
 
 echo "[+] Step 1: Aggregating metrics..."
-python scripts/aggregate_results.py
+python scripts/evaluation/aggregate_results.py
 
 echo "[+] Step 2: Generating plots..."
-python scripts/plots_metrics.py
+python scripts/reporting/plots_metrics.py
 
 echo "[+] Step 3: Generating reports..."
-python scripts/generate_report.py
+python scripts/reporting/generate_report.py
 
 echo ""
 echo "========================================="
@@ -61,4 +61,3 @@ echo "========================================="
 echo ""
 echo "Reports generated in reports/"
 echo "Open reports/report.md to view results."
-
