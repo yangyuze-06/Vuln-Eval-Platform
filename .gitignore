@@ -71,3 +71,8 @@ reports/data/metrics.json
 reports/figs/
 reports/report.md
 reports/report_zh.md
+
+############################
+# Others
+############################
+/godels-file/
