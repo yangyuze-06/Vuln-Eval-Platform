@@ -63,6 +63,7 @@ experiments/*/results/**/*.sarif
 experiments/*/results/**/*.csv
 experiments/*/results/**/Createsarif.txt
 experiments/cwe-022/results
+experiments/
 
 ############################
 # Generated reports
