@@ -27,6 +27,7 @@ env/
 .coverage
 .coverage.*
 htmlcov/
+.idea/
 
 ############################
 # Local env / secrets

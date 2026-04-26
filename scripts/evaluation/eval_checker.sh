@@ -14,6 +14,14 @@ if [ -z "$CWE_ID" ]; then
     exit 1
 fi
 
+# 获取脚本所在目录的绝对路径
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# 确定项目根目录 (scripts/evaluation 的上两级)
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
+
+# 切换到项目根目录执行
+cd "${PROJECT_ROOT}"
+
 # 激活虚拟环境 (如果存在)
 if [ -f ".venv/bin/activate" ]; then
     source .venv/bin/activate
