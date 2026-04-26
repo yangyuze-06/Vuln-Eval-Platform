@@ -1,0 +1,410 @@
+// script
+use coref::java::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// -------------------------
+// Source modeling
+// -------------------------
+fn is_http_source_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".getParameter(") ||
+            t.contains(".getParameterMap(") ||
+            t.contains(".getParameterValues(") ||
+            t.contains(".getParameterNames(") ||
+            t.contains(".getHeader(") ||
+            t.contains(".getHeaders(") ||
+            t.contains(".getQueryString(") ||
+            t.contains(".getCookies(") ||
+            t.contains(".getPathInfo(") ||
+            t.contains(".getRequestURI(") ||
+            t.contains(".getTheParameter(")
+    }
+}
+
+fn is_source_expr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (e.key_eq(c) && is_http_source_call(c)) {
+            return true
+        }
+    }
+}
+
+fn is_source_stmt(s: Statement) -> bool {
+    let (t = s.getPrintableText()) {
+        return
+            t.contains(".getParameter(") ||
+            t.contains(".getParameterMap(") ||
+            t.contains(".getParameterValues(") ||
+            t.contains(".getParameterNames(") ||
+            t.contains(".getHeader(") ||
+            t.contains(".getHeaders(") ||
+            t.contains(".getQueryString(") ||
+            t.contains(".getCookies(") ||
+            t.contains(".getPathInfo(") ||
+            t.contains(".getRequestURI(") ||
+            t.contains(".getTheParameter(")
+    }
+}
+
+// Header enumeration flow:
+//   request.getHeaderNames() -> Enumeration<headerName>
+//   enumeration.nextElement() -> header name
+//   request.getHeaders(headerName) -> Enumeration<headerValue>
+//   enumeration.nextElement() -> header value
+fn is_header_name_enumeration_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".getHeaderNames(")
+    }
+}
+
+fn is_header_value_enumeration_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".getHeaders(")
+    }
+}
+
+fn is_enumeration_next_element_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".nextElement(")
+    }
+}
+
+fn is_header_name_enumeration_source_expr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (e.key_eq(c) && is_header_name_enumeration_call(c)) {
+            return true
+        }
+    }
+}
+
+fn is_header_enumeration_next_element_expr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (
+            e.key_eq(c) &&
+            is_enumeration_next_element_call(c) &&
+            call_has_tainted_receiver(c)
+        ) {
+            return true
+        }
+    }
+}
+
+fn is_header_value_enumeration_expr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (
+            e.key_eq(c) &&
+            is_header_value_enumeration_call(c) &&
+            call_has_tainted_argument(c)
+        ) {
+            return true
+        }
+    }
+}
+
+// -------------------------
+// Sink & Sanitizer modeling (CWE-079: XSS)
+// -------------------------
+fn is_xss_sink_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        if (
+            t.contains(".print(") ||
+            t.contains(".println(") ||
+            t.contains(".write(") ||
+            t.contains(".format(") ||
+            t.contains(".printf(") ||
+            t.contains(".sendError(")
+        ) {
+            // Reject known non-web sinks (logging, file IO)
+            if (
+                t.contains("System.out.") ||
+                t.contains("System.err.") ||
+                t.contains("FileWriter") ||
+                t.contains("FileOutputStream") ||
+                t.contains("fw.") ||
+                t.contains("fos.") ||
+                t.contains("log.") ||
+                t.contains("logger.")
+            ) {
+                return false
+            }
+            
+            // Require it to look like a web response sink
+            return
+                t.contains("response.") ||
+                t.contains("out.") ||
+                t.contains("getWriter()") ||
+                t.contains("getOutputStream()") ||
+                t.contains("sendError(") ||
+                t.contains("setHeader(") ||
+                t.contains("addHeader(") ||
+                t.contains("addCookie(")
+        }
+    }
+}
+
+fn is_xss_sanitizer_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".encodeForHTML(") ||
+            t.contains(".encodeForHTMLAttribute(") ||
+            t.contains(".encodeForJavaScript(") ||
+            t.contains(".encodeForCSS(") ||
+            t.contains(".encodeForURL(") ||
+            t.contains(".HTMLEntityEncode(") ||
+            t.contains(".htmlEscape(") ||
+            t.contains(".escapeHtml(") ||
+            t.contains(".escapeHtml4(")
+    }
+}
+
+// Helper: check if an expression node IS a sanitizer call
+fn is_sanitizer_expr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (e.key_eq(c) && is_xss_sanitizer_call(c)) {
+            return true
+        }
+    }
+}
+
+// -------------------------
+// Helpers
+// -------------------------
+fn call_has_tainted_argument(c: MethodAccessExpression) -> bool {
+    for (rel in ExpressionListExpressionRelation(default_java_db())) {
+        if (
+            rel.getExpressionList().key_eq(c.getExpressionList()) &&
+            is_tainted_expr(rel.getExpression())
+        ) {
+            return true
+        }
+    }
+}
+
+fn call_has_tainted_receiver(c: MethodAccessExpression) -> bool {
+    for (recv in Expression(default_java_db())) {
+        if (recv.key_eq(c.getCallSite()) && is_tainted_expr(recv)) {
+            return true
+        }
+    }
+}
+
+fn new_has_tainted_argument(n: NewExpression) -> bool {
+    for (elist in ExpressionList(default_java_db())) {
+        if (n.key_eq(elist.getParent())) {
+            for (rel in ExpressionListExpressionRelation(default_java_db())) {
+                if (
+                    rel.getExpressionList().key_eq(elist) &&
+                    is_tainted_expr(rel.getExpression())
+                ) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+fn call_targets_callable(c: MethodAccessExpression, callee: Callable) -> bool {
+    for (m in Method(default_java_db())) {
+        if (callee.key_eq(m) && c.getMethod().key_eq(m)) {
+            return true
+        }
+    }
+
+    for (k in Constructor(default_java_db())) {
+        if (callee.key_eq(k) && c.getConstructor().key_eq(k)) {
+            return true
+        }
+    }
+}
+
+// -------------------------
+// Taint propagation
+// -------------------------
+fn is_tainted_var(v: Variable) -> bool {
+    for (lv in LocalVariable(default_java_db())) {
+        if (v.key_eq(lv) && is_tainted_expr(lv.getExpression())) {
+            return true
+        }
+    }
+
+    for (ae in AssignmentExpression(default_java_db())) {
+        if (is_tainted_expr(ae.getSource())) {
+            for (dstRef in ReferenceExpression(default_java_db())) {
+                if (dstRef.key_eq(ae.getDestination())) {
+                    for (dstVar in Variable(default_java_db())) {
+                        if (dstVar.key_eq(dstRef.getDefinition()) && v.key_eq(dstVar)) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (p in Parameter(default_java_db())) {
+        if (v.key_eq(p)) {
+            for (owner in Callable(default_java_db())) {
+                if (owner.key_eq(p.getParent())) {
+                    let (idx = p.getIndex()) {
+                        for (call in MethodAccessExpression(default_java_db())) {
+                            if (
+                                call_targets_callable(call, owner) &&
+                                is_tainted_expr(call.getArgument(idx))
+                            ) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (fs in ForeachStatement(default_java_db())) {
+        if (is_tainted_expr(fs.getIteratedValue())) {
+            for (it in Variable(default_java_db())) {
+                if (it.key_eq(fs.getIterationParameter()) && v.key_eq(it)) {
+                    return true
+                }
+            }
+        }
+    }
+
+    for (call in MethodAccessExpression(default_java_db())) {
+        if (call_has_tainted_argument(call)) {
+            let (t = call.getPrintableText()) {
+                if (
+                    t.contains(".put(") ||
+                    t.contains(".add(") ||
+                    t.contains(".addAll(") ||
+                    t.contains(".set(") ||
+                    t.contains(".insert(") ||
+                    t.contains(".append(")
+                ) {
+                    for (recv in ReferenceExpression(default_java_db())) {
+                        if (recv.key_eq(call.getCallSite())) {
+                            for (recvVar in Variable(default_java_db())) {
+                                if (recvVar.key_eq(recv.getDefinition()) && v.key_eq(recvVar)) {
+                                    return true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+fn is_tainted_expr(e: Expression) -> bool {
+    if (is_source_expr(e)) {
+        return true
+    }
+    if (is_header_name_enumeration_source_expr(e)) {
+        return true
+    }
+    if (is_header_enumeration_next_element_expr(e)) {
+        return true
+    }
+    if (is_header_value_enumeration_expr(e)) {
+        return true
+    }
+
+    for (v in Variable(default_java_db())) {
+        if (is_tainted_var(v)) {
+            for (ref in v.getDirectUsage()) {
+                if (e.key_eq(ref)) {
+                    return true
+                }
+            }
+        }
+    }
+
+    // Upward AST propagation: if child is tainted, parent is tainted
+    // UNLESS the parent is a sanitizer call (which kills taint)
+    for (child in Expression(default_java_db())) {
+        if (is_tainted_expr(child) && e.key_eq(child.getParent()) && !is_sanitizer_expr(e)) {
+            return true
+        }
+    }
+
+    // Call-result propagation: skip sanitizers, propagate through others
+    for (call in MethodAccessExpression(default_java_db())) {
+        if (
+            e.key_eq(call) &&
+            !is_xss_sanitizer_call(call) &&
+            (
+                call_has_tainted_argument(call) ||
+                call_has_tainted_receiver(call)
+            )
+        ) {
+            return true
+        }
+    }
+
+    for (n in NewExpression(default_java_db())) {
+        if (e.key_eq(n) && new_has_tainted_argument(n)) {
+            return true
+        }
+    }
+
+    for (call in MethodAccessExpression(default_java_db())) {
+        if (e.key_eq(call)) {
+            for (m in Method(default_java_db())) {
+                if (call.getMethod().key_eq(m)) {
+                    for (ret in ReturnStatement(default_java_db())) {
+                        if (ret.getEnclosingCallable().key_eq(m) && is_tainted_expr(ret.getResult())) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -------------------------
+// Findings
+// -------------------------
+fn cwe079_xss_findings(
+    ruleId: string,
+    sinkFile: string,
+    line: int
+) -> bool {
+    // XSS sinks usually don't use NewExpression, so we focus on MethodAccessExpression
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (is_xss_sink_call(c)) {
+            let (loc = c.getLocation()) {
+                let (owner = c.getEnclosingCallable()) {
+                    let (f = loc.getFile().getRelativePath()) {
+                        let (l = loc.getStartLineNumber()) {
+                            if (
+                                ruleId = "CWE-079" &&
+                                sinkFile = f &&
+                                line = l
+                            ) {
+                                // XSS usually happens when tainted data is passed as an argument
+                                if (call_has_tainted_argument(c)) {
+                                    return true
+                                }
+                                if (call_has_tainted_receiver(c)) {
+                                    return true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(cwe079_xss_findings())
+}
