@@ -17,10 +17,12 @@ fn is_http_source_call(c: MethodAccessExpression) -> bool {
             t.contains(".getParameterNames(") ||
             t.contains(".getHeader(") ||
             t.contains(".getHeaders(") ||
-            t.contains(".getQueryString(") ||
             t.contains(".getCookies(") ||
+            t.contains(".getQueryString(") ||
             t.contains(".getPathInfo(") ||
             t.contains(".getRequestURI(") ||
+            t.contains(".getRequestURL(") ||
+            t.contains(".getServletPath(") ||
             t.contains(".getTheParameter(")
     }
 }
@@ -33,28 +35,9 @@ fn is_source_expr(e: Expression) -> bool {
     }
 }
 
-fn is_source_stmt(s: Statement) -> bool {
-    let (t = s.getPrintableText()) {
-        return
-            t.contains(".getParameter(") ||
-            t.contains(".getParameterMap(") ||
-            t.contains(".getParameterValues(") ||
-            t.contains(".getParameterNames(") ||
-            t.contains(".getHeader(") ||
-            t.contains(".getHeaders(") ||
-            t.contains(".getQueryString(") ||
-            t.contains(".getCookies(") ||
-            t.contains(".getPathInfo(") ||
-            t.contains(".getRequestURI(") ||
-            t.contains(".getTheParameter(")
-    }
-}
-
 // Header enumeration flow:
-//   request.getHeaderNames() -> Enumeration<headerName>
-//   enumeration.nextElement() -> header name
-//   request.getHeaders(headerName) -> Enumeration<headerValue>
-//   enumeration.nextElement() -> header value
+// request.getHeaderNames() -> names.nextElement() -> request.getHeaders(name)
+// -> values.nextElement()
 fn is_header_name_enumeration_call(c: MethodAccessExpression) -> bool {
     let (t = c.getPrintableText()) {
         return t.contains(".getHeaderNames(")
@@ -106,62 +89,72 @@ fn is_header_value_enumeration_expr(e: Expression) -> bool {
 }
 
 // -------------------------
-// Sink & Sanitizer modeling (CWE-079: XSS)
+// Sink modeling
 // -------------------------
-fn is_xss_sink_call(c: MethodAccessExpression) -> bool {
+fn is_potential_xss_sink_call(c: MethodAccessExpression) -> bool {
     let (t = c.getPrintableText()) {
-        if (
+        return
             t.contains(".print(") ||
             t.contains(".println(") ||
             t.contains(".write(") ||
             t.contains(".format(") ||
             t.contains(".printf(") ||
             t.contains(".sendError(")
-        ) {
-            // Reject known non-web sinks (logging, file IO)
-            if (
-                t.contains("System.out.") ||
-                t.contains("System.err.") ||
-                t.contains("FileWriter") ||
-                t.contains("FileOutputStream") ||
-                t.contains("fw.") ||
-                t.contains("fos.") ||
-                t.contains("log.") ||
-                t.contains("logger.")
-            ) {
-                return false
-            }
-            
-            // Require it to look like a web response sink
-            return
-                t.contains("response.") ||
-                t.contains("out.") ||
-                t.contains("getWriter()") ||
-                t.contains("getOutputStream()") ||
-                t.contains("sendError(") ||
-                t.contains("setHeader(") ||
-                t.contains("addHeader(") ||
-                t.contains("addCookie(")
-        }
     }
 }
 
+fn is_non_web_sink_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains("System.out.print(") ||
+            t.contains("System.out.println(") ||
+            t.contains("System.out.write(") ||
+            t.contains("System.out.printf(") ||
+            t.contains("System.out.format(") ||
+            t.contains("System.err.print(") ||
+            t.contains("System.err.println(") ||
+            t.contains("System.err.write(") ||
+            t.contains("System.err.printf(") ||
+            t.contains("System.err.format(")
+    }
+}
+
+fn is_web_response_sink_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains("response.") ||
+            t.contains(".getWriter()") ||
+            t.contains(".getOutputStream()") ||
+            t.contains("out.print(") ||
+            t.contains("out.println(") ||
+            t.contains("out.write(") ||
+            t.contains("out.format(") ||
+            t.contains("out.printf(") ||
+            t.contains(".sendError(")
+    }
+}
+
+fn is_xss_sink_call(c: MethodAccessExpression) -> bool {
+    return
+        is_potential_xss_sink_call(c) &&
+        is_web_response_sink_call(c) &&
+        !is_non_web_sink_call(c)
+}
+
+// -------------------------
+// Sanitizer modeling
+// -------------------------
 fn is_xss_sanitizer_call(c: MethodAccessExpression) -> bool {
     let (t = c.getPrintableText()) {
         return
-            t.contains(".encodeForHTML(") ||
-            t.contains(".encodeForHTMLAttribute(") ||
-            t.contains(".encodeForJavaScript(") ||
-            t.contains(".encodeForCSS(") ||
-            t.contains(".encodeForURL(") ||
-            t.contains(".HTMLEntityEncode(") ||
             t.contains(".htmlEscape(") ||
+            t.contains(".encodeForHTML(") ||
             t.contains(".escapeHtml(") ||
-            t.contains(".escapeHtml4(")
+            t.contains(".escapeHtml4(") ||
+            t.contains(".HTMLEntityEncode(")
     }
 }
 
-// Helper: check if an expression node IS a sanitizer call
 fn is_sanitizer_expr(e: Expression) -> bool {
     for (c in MethodAccessExpression(default_java_db())) {
         if (e.key_eq(c) && is_xss_sanitizer_call(c)) {
@@ -170,8 +163,147 @@ fn is_sanitizer_expr(e: Expression) -> bool {
     }
 }
 
+fn var_has_sanitized_value(v: Variable) -> bool {
+    for (lv in LocalVariable(default_java_db())) {
+        if (v.key_eq(lv) && is_sanitizer_expr(lv.getExpression())) {
+            return true
+        }
+    }
+
+    for (ae in AssignmentExpression(default_java_db())) {
+        if (is_sanitizer_expr(ae.getSource())) {
+            for (dstRef in ReferenceExpression(default_java_db())) {
+                if (dstRef.key_eq(ae.getDestination())) {
+                    for (dstVar in Variable(default_java_db())) {
+                        if (dstVar.key_eq(dstRef.getDefinition()) && v.key_eq(dstVar)) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn is_sanitized_return_expr(e: Expression) -> bool {
+    if (is_sanitizer_expr(e)) {
+        return true
+    }
+
+    for (ref in ReferenceExpression(default_java_db())) {
+        if (e.key_eq(ref)) {
+            for (v in Variable(default_java_db())) {
+                if (v.key_eq(ref.getDefinition()) && var_has_sanitized_value(v)) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+fn method_has_sanitized_return(m: Method) -> bool {
+    for (ret in ReturnStatement(default_java_db())) {
+        if (
+            ret.getEnclosingCallable().key_eq(m) &&
+            is_sanitized_return_expr(ret.getResult())
+        ) {
+            return true
+        }
+    }
+}
+
+fn method_has_unsanitized_return(m: Method) -> bool {
+    for (ret in ReturnStatement(default_java_db())) {
+        if (ret.getEnclosingCallable().key_eq(m)) {
+            for (retExpr in Expression(default_java_db())) {
+                if (
+                    retExpr.key_eq(ret.getResult()) &&
+                    !is_sanitized_return_expr(retExpr)
+                ) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+fn is_sanitized_return_method(m: Method) -> bool {
+    return
+        method_has_sanitized_return(m) &&
+        !method_has_unsanitized_return(m)
+}
+
+fn is_sanitized_call_result(c: MethodAccessExpression) -> bool {
+    for (m in Method(default_java_db())) {
+        if (c.getMethod().key_eq(m) && is_sanitized_return_method(m)) {
+            return true
+        }
+    }
+}
+
 // -------------------------
-// Helpers
+// Non-XSS domain result barriers
+// -------------------------
+fn is_sql_jdbc_domain_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".executeQuery(") ||
+            t.contains(".executeUpdate(") ||
+            t.contains(".execute(") ||
+            t.contains(".queryForObject(") ||
+            t.contains(".queryForList(") ||
+            t.contains(".query(") ||
+            t.contains(".getString(") ||
+            t.contains(".getObject(") ||
+            t.contains(".getInt(") ||
+            t.contains(".getLong(") ||
+            t.contains(".getDouble(") ||
+            t.contains(".getFloat(") ||
+            t.contains(".getBoolean(")
+    }
+}
+
+fn is_ldap_jndi_domain_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".search(") ||
+            t.contains(".next(") ||
+            t.contains(".nextElement(") ||
+            t.contains(".getAttributes(") ||
+            t.contains(".getAll(") ||
+            t.contains(".getAttribute(")
+    }
+}
+
+fn is_xpath_xml_dom_domain_call(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".evaluate(") ||
+            t.contains(".getTextContent(") ||
+            t.contains(".getNodeValue(") ||
+            t.contains(".getAttribute(") ||
+            t.contains(".getElementsByTagName(") ||
+            t.contains(".item(")
+    }
+}
+
+fn is_non_xss_domain_call_result(c: MethodAccessExpression) -> bool {
+    return
+        is_sql_jdbc_domain_call(c) ||
+        is_ldap_jndi_domain_call(c) ||
+        is_xpath_xml_dom_domain_call(c)
+}
+
+fn is_non_xss_domain_expr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (e.key_eq(c) && is_non_xss_domain_call_result(c)) {
+            return true
+        }
+    }
+}
+
+// -------------------------
+// Generic helpers
 // -------------------------
 fn call_has_tainted_argument(c: MethodAccessExpression) -> bool {
     for (rel in ExpressionListExpressionRelation(default_java_db())) {
@@ -274,6 +406,9 @@ fn is_tainted_var(v: Variable) -> bool {
         }
     }
 
+    // Collection / builder receiver taint. This is intentionally broad and
+    // keeps recall for common append/add/put flows; precise key/index modeling
+    // is not part of this rebuilt checker.
     for (call in MethodAccessExpression(default_java_db())) {
         if (call_has_tainted_argument(call)) {
             let (t = call.getPrintableText()) {
@@ -300,8 +435,6 @@ fn is_tainted_var(v: Variable) -> bool {
     }
 }
 
-
-
 fn is_tainted_expr(e: Expression) -> bool {
     if (is_source_expr(e)) {
         return true
@@ -326,19 +459,30 @@ fn is_tainted_expr(e: Expression) -> bool {
         }
     }
 
-    // Upward AST propagation: if child is tainted, parent is tainted
-    // UNLESS the parent is a sanitizer call (which kills taint)
+    // Upward AST propagation for concatenation, casts, arrays, and wrapper
+    // expressions. Sanitizer calls are terminal for taint.
     for (child in Expression(default_java_db())) {
-        if (is_tainted_expr(child) && e.key_eq(child.getParent()) && !is_sanitizer_expr(e)) {
+        if (
+            is_tainted_expr(child) &&
+            e.key_eq(child.getParent()) &&
+            !is_sanitizer_expr(e) &&
+            !is_non_xss_domain_expr(e)
+        ) {
             return true
         }
     }
 
-    // Call-result propagation: skip sanitizers, propagate through others
+    // Generic call-result propagation covers common string-preserving APIs
+    // such as trim/substring/concat/toString/String.valueOf/URLDecoder.decode.
+    // The two barriers below prevent known sanitized returns and non-XSS query
+    // result domains from being re-tainted solely because an input argument or
+    // receiver was tainted.
     for (call in MethodAccessExpression(default_java_db())) {
         if (
             e.key_eq(call) &&
             !is_xss_sanitizer_call(call) &&
+            !is_sanitized_call_result(call) &&
+            !is_non_xss_domain_call_result(call) &&
             (
                 call_has_tainted_argument(call) ||
                 call_has_tainted_receiver(call)
@@ -354,12 +498,18 @@ fn is_tainted_expr(e: Expression) -> bool {
         }
     }
 
+    // Explicit inter-procedural return propagation. This remains independent
+    // from the sanitized-call barrier: if a callee explicitly returns tainted
+    // data, its call result stays tainted.
     for (call in MethodAccessExpression(default_java_db())) {
         if (e.key_eq(call)) {
             for (m in Method(default_java_db())) {
                 if (call.getMethod().key_eq(m)) {
                     for (ret in ReturnStatement(default_java_db())) {
-                        if (ret.getEnclosingCallable().key_eq(m) && is_tainted_expr(ret.getResult())) {
+                        if (
+                            ret.getEnclosingCallable().key_eq(m) &&
+                            is_tainted_expr(ret.getResult())
+                        ) {
                             return true
                         }
                     }
@@ -377,25 +527,21 @@ fn cwe079_xss_findings(
     sinkFile: string,
     line: int
 ) -> bool {
-    // XSS sinks usually don't use NewExpression, so we focus on MethodAccessExpression
     for (c in MethodAccessExpression(default_java_db())) {
         if (is_xss_sink_call(c)) {
             let (loc = c.getLocation()) {
-                let (owner = c.getEnclosingCallable()) {
-                    let (f = loc.getFile().getRelativePath()) {
-                        let (l = loc.getStartLineNumber()) {
-                            if (
-                                ruleId = "CWE-079" &&
-                                sinkFile = f &&
-                                line = l
-                            ) {
-                                // XSS usually happens when tainted data is passed as an argument
-                                if (call_has_tainted_argument(c)) {
-                                    return true
-                                }
-                                if (call_has_tainted_receiver(c)) {
-                                    return true
-                                }
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-079" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            if (call_has_tainted_argument(c)) {
+                                return true
+                            }
+                            if (call_has_tainted_receiver(c)) {
+                                return true
                             }
                         }
                     }
