@@ -1,0 +1,18 @@
+// Global sanitizer/barrier placeholders shared by Java security checkers.
+use coref::java::*
+
+pub fn isGlobalSanitizerCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isGlobalSanitizerExpr(e: Expression) -> bool {
+    return false
+}
+
+pub fn isGlobalBarrierCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isGlobalBarrierExpr(e: Expression) -> bool {
+    return false
+}

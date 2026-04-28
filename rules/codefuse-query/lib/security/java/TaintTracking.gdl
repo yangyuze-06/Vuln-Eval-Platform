@@ -1,0 +1,388 @@
+// Shared broad taint propagation for Java security checkers.
+use coref::java::*
+use security::java::JavaServletSources::*
+use security::java::TaintHelpers::*
+use security::java::sanitizers::XssSanitizers::*
+
+fn taint_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+pub fn callHasTaintedArgument(c: MethodAccessExpression) -> bool {
+    for (arg in Expression(taint_java_db())) {
+        if (callArgument(c, arg) && isTaintedExpr(arg)) {
+            return true
+        }
+    }
+}
+
+pub fn callHasTaintedReceiver(c: MethodAccessExpression) -> bool {
+    for (recv in ReferenceExpression(taint_java_db())) {
+        if (callReceiverReference(c, recv) && isTaintedExpr(recv)) {
+            return true
+        }
+    }
+}
+
+pub fn newHasTaintedArgument(n: NewExpression) -> bool {
+    for (arg in Expression(taint_java_db())) {
+        if (newArgument(n, arg) && isTaintedExpr(arg)) {
+            return true
+        }
+    }
+}
+
+fn isHeaderEnumerationNextElementExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(taint_java_db())) {
+        if (
+            e.key_eq(c) &&
+            isEnumerationNextElementCall(c) &&
+            callHasTaintedReceiver(c)
+        ) {
+            return true
+        }
+    }
+}
+
+fn isHeaderValueEnumerationExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(taint_java_db())) {
+        if (
+            e.key_eq(c) &&
+            isHeaderValueEnumerationCall(c) &&
+            callHasTaintedArgument(c)
+        ) {
+            return true
+        }
+    }
+}
+
+pub fn isTaintedVar(v: Variable) -> bool {
+    for (lv in LocalVariable(taint_java_db())) {
+        if (v.key_eq(lv) && isTaintedExpr(lv.getExpression())) {
+            return true
+        }
+    }
+
+    for (ae in AssignmentExpression(taint_java_db())) {
+        if (isTaintedExpr(ae.getSource())) {
+            for (dstRef in ReferenceExpression(taint_java_db())) {
+                if (dstRef.key_eq(ae.getDestination())) {
+                    for (dstVar in Variable(taint_java_db())) {
+                        if (dstVar.key_eq(dstRef.getDefinition()) && v.key_eq(dstVar)) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (p in Parameter(taint_java_db())) {
+        if (v.key_eq(p)) {
+            for (owner in Callable(taint_java_db())) {
+                if (owner.key_eq(p.getParent())) {
+                    let (idx = p.getIndex()) {
+                        for (call in MethodAccessExpression(taint_java_db())) {
+                            if (
+                                callTargetsCallable(call, owner) &&
+                                isTaintedExpr(call.getArgument(idx))
+                            ) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (fs in ForeachStatement(taint_java_db())) {
+        if (isTaintedExpr(fs.getIteratedValue())) {
+            for (it in Variable(taint_java_db())) {
+                if (it.key_eq(fs.getIterationParameter()) && v.key_eq(it)) {
+                    return true
+                }
+            }
+        }
+    }
+
+    for (call in MethodAccessExpression(taint_java_db())) {
+        if (callHasTaintedArgument(call)) {
+            for (recv in ReferenceExpression(taint_java_db())) {
+                if (recv.key_eq(call.getCallSite())) {
+                    for (recvVar in Variable(taint_java_db())) {
+                        if (recvVar.key_eq(recv.getDefinition()) && v.key_eq(recvVar)) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn isTaintedExpr(e: Expression) -> bool {
+    if (isServletTaintSourceExpr(e)) {
+        return true
+    }
+
+    if (isHeaderNameEnumerationSourceExpr(e)) {
+        return true
+    }
+    if (isHeaderEnumerationNextElementExpr(e)) {
+        return true
+    }
+    if (isHeaderValueEnumerationExpr(e)) {
+        return true
+    }
+
+    for (v in Variable(taint_java_db())) {
+        if (isTaintedVar(v)) {
+            for (ref in v.getDirectUsage()) {
+                if (e.key_eq(ref)) {
+                    return true
+                }
+            }
+        }
+    }
+
+    for (child in Expression(taint_java_db())) {
+        if (isTaintedExpr(child) && e.key_eq(child.getParent())) {
+            return true
+        }
+    }
+
+    for (call in MethodAccessExpression(taint_java_db())) {
+        if (
+            e.key_eq(call) &&
+            (
+                callHasTaintedArgument(call) ||
+                callHasTaintedReceiver(call)
+            )
+        ) {
+            return true
+        }
+    }
+
+    for (n in NewExpression(taint_java_db())) {
+        if (e.key_eq(n) && newHasTaintedArgument(n)) {
+            return true
+        }
+    }
+
+    for (call in MethodAccessExpression(taint_java_db())) {
+        if (e.key_eq(call)) {
+            for (m in Method(taint_java_db())) {
+                if (call.getMethod().key_eq(m)) {
+                    for (ret in ReturnStatement(taint_java_db())) {
+                        if (ret.getEnclosingCallable().key_eq(m) && isTaintedExpr(ret.getResult())) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn xssCallHasTaintedArgument(c: MethodAccessExpression) -> bool {
+    for (arg in Expression(taint_java_db())) {
+        if (callArgument(c, arg) && isXssTaintedExpr(arg)) {
+            return true
+        }
+    }
+}
+
+pub fn xssCallHasTaintedReceiver(c: MethodAccessExpression) -> bool {
+    for (recv in Expression(taint_java_db())) {
+        if (callReceiverExpression(c, recv) && isXssTaintedExpr(recv)) {
+            return true
+        }
+    }
+}
+
+pub fn xssNewHasTaintedArgument(n: NewExpression) -> bool {
+    for (arg in Expression(taint_java_db())) {
+        if (newArgument(n, arg) && isXssTaintedExpr(arg)) {
+            return true
+        }
+    }
+}
+
+fn isXssHeaderEnumerationNextElementExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(taint_java_db())) {
+        if (
+            e.key_eq(c) &&
+            isEnumerationNextElementCall(c) &&
+            xssCallHasTaintedReceiver(c)
+        ) {
+            return true
+        }
+    }
+}
+
+fn isXssHeaderValueEnumerationExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(taint_java_db())) {
+        if (
+            e.key_eq(c) &&
+            isHeaderValueEnumerationCall(c) &&
+            xssCallHasTaintedArgument(c)
+        ) {
+            return true
+        }
+    }
+}
+
+pub fn isXssTaintedVar(v: Variable) -> bool {
+    for (lv in LocalVariable(taint_java_db())) {
+        if (v.key_eq(lv) && isXssTaintedExpr(lv.getExpression())) {
+            return true
+        }
+    }
+
+    for (ae in AssignmentExpression(taint_java_db())) {
+        if (isXssTaintedExpr(ae.getSource())) {
+            for (dstRef in ReferenceExpression(taint_java_db())) {
+                if (dstRef.key_eq(ae.getDestination())) {
+                    for (dstVar in Variable(taint_java_db())) {
+                        if (dstVar.key_eq(dstRef.getDefinition()) && v.key_eq(dstVar)) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (p in Parameter(taint_java_db())) {
+        if (v.key_eq(p)) {
+            for (owner in Callable(taint_java_db())) {
+                if (owner.key_eq(p.getParent())) {
+                    let (idx = p.getIndex()) {
+                        for (call in MethodAccessExpression(taint_java_db())) {
+                            if (
+                                callTargetsCallable(call, owner) &&
+                                isXssTaintedExpr(call.getArgument(idx))
+                            ) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (fs in ForeachStatement(taint_java_db())) {
+        if (isXssTaintedExpr(fs.getIteratedValue())) {
+            for (it in Variable(taint_java_db())) {
+                if (it.key_eq(fs.getIterationParameter()) && v.key_eq(it)) {
+                    return true
+                }
+            }
+        }
+    }
+
+    for (call in MethodAccessExpression(taint_java_db())) {
+        if (xssCallHasTaintedArgument(call)) {
+            let (t = call.getPrintableText()) {
+                if (
+                    t.contains(".put(") ||
+                    t.contains(".add(") ||
+                    t.contains(".addAll(") ||
+                    t.contains(".set(") ||
+                    t.contains(".insert(") ||
+                    t.contains(".append(")
+                ) {
+                    for (recv in ReferenceExpression(taint_java_db())) {
+                        if (recv.key_eq(call.getCallSite())) {
+                            for (recvVar in Variable(taint_java_db())) {
+                                if (recvVar.key_eq(recv.getDefinition()) && v.key_eq(recvVar)) {
+                                    return true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn isXssTaintedExpr(e: Expression) -> bool {
+    if (isServletXssTaintSourceExpr(e)) {
+        return true
+    }
+    if (isHeaderNameEnumerationSourceExpr(e)) {
+        return true
+    }
+    if (isXssHeaderEnumerationNextElementExpr(e)) {
+        return true
+    }
+    if (isXssHeaderValueEnumerationExpr(e)) {
+        return true
+    }
+
+    for (v in Variable(taint_java_db())) {
+        if (isXssTaintedVar(v)) {
+            for (ref in v.getDirectUsage()) {
+                if (e.key_eq(ref)) {
+                    return true
+                }
+            }
+        }
+    }
+
+    for (child in Expression(taint_java_db())) {
+        if (
+            isXssTaintedExpr(child) &&
+            e.key_eq(child.getParent()) &&
+            !isXssSanitizerExpr(e) &&
+            !isNonXssDomainExpr(e)
+        ) {
+            return true
+        }
+    }
+
+    for (call in MethodAccessExpression(taint_java_db())) {
+        if (
+            e.key_eq(call) &&
+            !isXssSanitizerCall(call) &&
+            !isXssSanitizedCallResult(call) &&
+            !isNonXssDomainCallResult(call) &&
+            (
+                xssCallHasTaintedArgument(call) ||
+                xssCallHasTaintedReceiver(call)
+            )
+        ) {
+            return true
+        }
+    }
+
+    for (n in NewExpression(taint_java_db())) {
+        if (e.key_eq(n) && xssNewHasTaintedArgument(n)) {
+            return true
+        }
+    }
+
+    for (call in MethodAccessExpression(taint_java_db())) {
+        if (e.key_eq(call)) {
+            for (m in Method(taint_java_db())) {
+                if (call.getMethod().key_eq(m)) {
+                    for (ret in ReturnStatement(taint_java_db())) {
+                        if (
+                            ret.getEnclosingCallable().key_eq(m) &&
+                            isXssTaintedExpr(ret.getResult())
+                        ) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn flowsTo(src: Expression, sink: Expression) -> bool {
+    return isTaintedExpr(src) && isTaintedExpr(sink)
+}

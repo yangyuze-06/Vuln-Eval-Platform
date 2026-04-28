@@ -1,0 +1,161 @@
+// CWE-079 sanitizer and non-XSS domain barrier modeling.
+use coref::java::*
+
+fn sanitizer_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+pub fn isXssSanitizerCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".htmlEscape(") ||
+            t.contains(".encodeForHTML(") ||
+            t.contains(".escapeHtml(") ||
+            t.contains(".escapeHtml4(") ||
+            t.contains(".HTMLEntityEncode(")
+    }
+}
+
+pub fn isXssSanitizerExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(sanitizer_java_db())) {
+        if (e.key_eq(c) && isXssSanitizerCall(c)) {
+            return true
+        }
+    }
+}
+
+pub fn xssVarHasSanitizedValue(v: Variable) -> bool {
+    for (lv in LocalVariable(sanitizer_java_db())) {
+        if (v.key_eq(lv) && isXssSanitizerExpr(lv.getExpression())) {
+            return true
+        }
+    }
+
+    for (ae in AssignmentExpression(sanitizer_java_db())) {
+        if (isXssSanitizerExpr(ae.getSource())) {
+            for (dstRef in ReferenceExpression(sanitizer_java_db())) {
+                if (dstRef.key_eq(ae.getDestination())) {
+                    for (dstVar in Variable(sanitizer_java_db())) {
+                        if (dstVar.key_eq(dstRef.getDefinition()) && v.key_eq(dstVar)) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn isXssSanitizedReturnExpr(e: Expression) -> bool {
+    if (isXssSanitizerExpr(e)) {
+        return true
+    }
+
+    for (ref in ReferenceExpression(sanitizer_java_db())) {
+        if (e.key_eq(ref)) {
+            for (v in Variable(sanitizer_java_db())) {
+                if (v.key_eq(ref.getDefinition()) && xssVarHasSanitizedValue(v)) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn xssMethodHasSanitizedReturn(m: Method) -> bool {
+    for (ret in ReturnStatement(sanitizer_java_db())) {
+        if (
+            ret.getEnclosingCallable().key_eq(m) &&
+            isXssSanitizedReturnExpr(ret.getResult())
+        ) {
+            return true
+        }
+    }
+}
+
+pub fn xssMethodHasUnsanitizedReturn(m: Method) -> bool {
+    for (ret in ReturnStatement(sanitizer_java_db())) {
+        if (ret.getEnclosingCallable().key_eq(m)) {
+            for (retExpr in Expression(sanitizer_java_db())) {
+                if (
+                    retExpr.key_eq(ret.getResult()) &&
+                    !isXssSanitizedReturnExpr(retExpr)
+                ) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn isXssSanitizedReturnMethod(m: Method) -> bool {
+    return
+        xssMethodHasSanitizedReturn(m) &&
+        !xssMethodHasUnsanitizedReturn(m)
+}
+
+pub fn isXssSanitizedCallResult(c: MethodAccessExpression) -> bool {
+    for (m in Method(sanitizer_java_db())) {
+        if (c.getMethod().key_eq(m) && isXssSanitizedReturnMethod(m)) {
+            return true
+        }
+    }
+}
+
+pub fn isSqlJdbcDomainCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".executeQuery(") ||
+            t.contains(".executeUpdate(") ||
+            t.contains(".execute(") ||
+            t.contains(".queryForObject(") ||
+            t.contains(".queryForList(") ||
+            t.contains(".query(") ||
+            t.contains(".getString(") ||
+            t.contains(".getObject(") ||
+            t.contains(".getInt(") ||
+            t.contains(".getLong(") ||
+            t.contains(".getDouble(") ||
+            t.contains(".getFloat(") ||
+            t.contains(".getBoolean(")
+    }
+}
+
+pub fn isLdapJndiDomainCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".search(") ||
+            t.contains(".next(") ||
+            t.contains(".nextElement(") ||
+            t.contains(".getAttributes(") ||
+            t.contains(".getAll(") ||
+            t.contains(".getAttribute(")
+    }
+}
+
+pub fn isXpathXmlDomDomainCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".evaluate(") ||
+            t.contains(".getTextContent(") ||
+            t.contains(".getNodeValue(") ||
+            t.contains(".getAttribute(") ||
+            t.contains(".getElementsByTagName(") ||
+            t.contains(".item(")
+    }
+}
+
+pub fn isNonXssDomainCallResult(c: MethodAccessExpression) -> bool {
+    return
+        isSqlJdbcDomainCall(c) ||
+        isLdapJndiDomainCall(c) ||
+        isXpathXmlDomDomainCall(c)
+}
+
+pub fn isNonXssDomainExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(sanitizer_java_db())) {
+        if (e.key_eq(c) && isNonXssDomainCallResult(c)) {
+            return true
+        }
+    }
+}

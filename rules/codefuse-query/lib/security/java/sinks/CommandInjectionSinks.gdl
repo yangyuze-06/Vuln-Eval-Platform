@@ -1,0 +1,18 @@
+// CWE-078 OS command injection sink modeling.
+use coref::java::*
+
+pub fn isCmdiSinkNew(n: NewExpression) -> bool {
+    let (t = n.getPrintableText()) {
+        return
+            t.contains("new java.lang.ProcessBuilder(") ||
+            t.contains("new ProcessBuilder(")
+    }
+}
+
+pub fn isCmdiSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".exec(") ||
+            t.contains(".command(")
+    }
+}

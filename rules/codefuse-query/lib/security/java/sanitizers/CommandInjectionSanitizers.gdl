@@ -1,0 +1,18 @@
+// CWE-078 sanitizer/barrier placeholders. No behavior is enabled in Phase 5A.
+use coref::java::*
+
+pub fn isCommandInjectionSanitizerCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isCommandInjectionSanitizerExpr(e: Expression) -> bool {
+    return false
+}
+
+pub fn isCommandInjectionBarrierCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isCommandInjectionBarrierExpr(e: Expression) -> bool {
+    return false
+}

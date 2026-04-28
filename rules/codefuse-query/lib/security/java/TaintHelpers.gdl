@@ -1,0 +1,54 @@
+// Shared helper relations used by Java security taint checkers.
+use coref::java::*
+
+fn helper_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+pub fn callArgument(c: MethodAccessExpression, arg: Expression) -> bool {
+    for (rel in ExpressionListExpressionRelation(helper_java_db())) {
+        if (
+            rel.getExpressionList().key_eq(c.getExpressionList()) &&
+            arg.key_eq(rel.getExpression())
+        ) {
+            return true
+        }
+    }
+}
+
+pub fn callReceiverReference(c: MethodAccessExpression, recv: ReferenceExpression) -> bool {
+    return recv.key_eq(c.getCallSite())
+}
+
+pub fn callReceiverExpression(c: MethodAccessExpression, recv: Expression) -> bool {
+    return recv.key_eq(c.getCallSite())
+}
+
+pub fn newArgument(n: NewExpression, arg: Expression) -> bool {
+    for (elist in ExpressionList(helper_java_db())) {
+        if (n.key_eq(elist.getParent())) {
+            for (rel in ExpressionListExpressionRelation(helper_java_db())) {
+                if (
+                    rel.getExpressionList().key_eq(elist) &&
+                    arg.key_eq(rel.getExpression())
+                ) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn callTargetsCallable(c: MethodAccessExpression, callee: Callable) -> bool {
+    for (m in Method(helper_java_db())) {
+        if (callee.key_eq(m) && c.getMethod().key_eq(m)) {
+            return true
+        }
+    }
+
+    for (k in Constructor(helper_java_db())) {
+        if (callee.key_eq(k) && c.getConstructor().key_eq(k)) {
+            return true
+        }
+    }
+}

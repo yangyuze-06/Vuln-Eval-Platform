@@ -1,5 +1,10 @@
 // script
 use coref::java::*
+use security::java::JavaServletSources::*
+use security::java::TaintHelpers::*
+use security::java::TaintTracking::*
+use security::java::sanitizers::XssSanitizers::*
+use security::java::sinks::XssSinks::*
 
 fn default_java_db() -> JavaDB {
     return JavaDB::load("coref_java_src.db")
@@ -9,59 +14,34 @@ fn default_java_db() -> JavaDB {
 // Source modeling
 // -------------------------
 fn is_http_source_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return
-            t.contains(".getParameter(") ||
-            t.contains(".getParameterMap(") ||
-            t.contains(".getParameterValues(") ||
-            t.contains(".getParameterNames(") ||
-            t.contains(".getHeader(") ||
-            t.contains(".getHeaders(") ||
-            t.contains(".getCookies(") ||
-            t.contains(".getQueryString(") ||
-            t.contains(".getPathInfo(") ||
-            t.contains(".getRequestURI(") ||
-            t.contains(".getRequestURL(") ||
-            t.contains(".getServletPath(") ||
-            t.contains(".getTheParameter(")
-    }
+    return isServletXssTaintSourceCall(c)
 }
 
 fn is_source_expr(e: Expression) -> bool {
-    for (c in MethodAccessExpression(default_java_db())) {
-        if (e.key_eq(c) && is_http_source_call(c)) {
-            return true
-        }
-    }
+    return isServletXssTaintSourceExpr(e)
+}
+
+fn is_source_stmt(s: Statement) -> bool {
+    return isServletXssTaintSourceStmt(s)
 }
 
 // Header enumeration flow:
 // request.getHeaderNames() -> names.nextElement() -> request.getHeaders(name)
 // -> values.nextElement()
 fn is_header_name_enumeration_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return t.contains(".getHeaderNames(")
-    }
+    return isHeaderNameEnumerationCall(c)
 }
 
 fn is_header_value_enumeration_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return t.contains(".getHeaders(")
-    }
+    return isHeaderValueEnumerationCall(c)
 }
 
 fn is_enumeration_next_element_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return t.contains(".nextElement(")
-    }
+    return isEnumerationNextElementCall(c)
 }
 
 fn is_header_name_enumeration_source_expr(e: Expression) -> bool {
-    for (c in MethodAccessExpression(default_java_db())) {
-        if (e.key_eq(c) && is_header_name_enumeration_call(c)) {
-            return true
-        }
-    }
+    return isHeaderNameEnumerationSourceExpr(e)
 }
 
 fn is_header_enumeration_next_element_expr(e: Expression) -> bool {
@@ -92,431 +72,70 @@ fn is_header_value_enumeration_expr(e: Expression) -> bool {
 // Sink modeling
 // -------------------------
 fn is_potential_xss_sink_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return
-            t.contains(".print(") ||
-            t.contains(".println(") ||
-            t.contains(".write(") ||
-            t.contains(".format(") ||
-            t.contains(".printf(") ||
-            t.contains(".sendError(")
-    }
+    return isPotentialXssSinkCall(c)
 }
 
 fn is_non_web_sink_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return
-            t.contains("System.out.print(") ||
-            t.contains("System.out.println(") ||
-            t.contains("System.out.write(") ||
-            t.contains("System.out.printf(") ||
-            t.contains("System.out.format(") ||
-            t.contains("System.err.print(") ||
-            t.contains("System.err.println(") ||
-            t.contains("System.err.write(") ||
-            t.contains("System.err.printf(") ||
-            t.contains("System.err.format(")
-    }
+    return isNonWebSinkCall(c)
 }
 
 fn is_web_response_sink_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return
-            t.contains("response.") ||
-            t.contains(".getWriter()") ||
-            t.contains(".getOutputStream()") ||
-            t.contains("out.print(") ||
-            t.contains("out.println(") ||
-            t.contains("out.write(") ||
-            t.contains("out.format(") ||
-            t.contains("out.printf(") ||
-            t.contains(".sendError(")
-    }
+    return isWebResponseSinkCall(c)
 }
 
 fn is_xss_sink_call(c: MethodAccessExpression) -> bool {
-    return
-        is_potential_xss_sink_call(c) &&
-        is_web_response_sink_call(c) &&
-        !is_non_web_sink_call(c)
+    return isXssSinkCall(c)
 }
 
 // -------------------------
 // Sanitizer modeling
 // -------------------------
-fn is_xss_sanitizer_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return
-            t.contains(".htmlEscape(") ||
-            t.contains(".encodeForHTML(") ||
-            t.contains(".escapeHtml(") ||
-            t.contains(".escapeHtml4(") ||
-            t.contains(".HTMLEntityEncode(")
-    }
-}
-
-fn is_sanitizer_expr(e: Expression) -> bool {
-    for (c in MethodAccessExpression(default_java_db())) {
-        if (e.key_eq(c) && is_xss_sanitizer_call(c)) {
-            return true
-        }
-    }
-}
-
-fn var_has_sanitized_value(v: Variable) -> bool {
-    for (lv in LocalVariable(default_java_db())) {
-        if (v.key_eq(lv) && is_sanitizer_expr(lv.getExpression())) {
-            return true
-        }
-    }
-
-    for (ae in AssignmentExpression(default_java_db())) {
-        if (is_sanitizer_expr(ae.getSource())) {
-            for (dstRef in ReferenceExpression(default_java_db())) {
-                if (dstRef.key_eq(ae.getDestination())) {
-                    for (dstVar in Variable(default_java_db())) {
-                        if (dstVar.key_eq(dstRef.getDefinition()) && v.key_eq(dstVar)) {
-                            return true
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn is_sanitized_return_expr(e: Expression) -> bool {
-    if (is_sanitizer_expr(e)) {
-        return true
-    }
-
-    for (ref in ReferenceExpression(default_java_db())) {
-        if (e.key_eq(ref)) {
-            for (v in Variable(default_java_db())) {
-                if (v.key_eq(ref.getDefinition()) && var_has_sanitized_value(v)) {
-                    return true
-                }
-            }
-        }
-    }
-}
-
-fn method_has_sanitized_return(m: Method) -> bool {
-    for (ret in ReturnStatement(default_java_db())) {
-        if (
-            ret.getEnclosingCallable().key_eq(m) &&
-            is_sanitized_return_expr(ret.getResult())
-        ) {
-            return true
-        }
-    }
-}
-
-fn method_has_unsanitized_return(m: Method) -> bool {
-    for (ret in ReturnStatement(default_java_db())) {
-        if (ret.getEnclosingCallable().key_eq(m)) {
-            for (retExpr in Expression(default_java_db())) {
-                if (
-                    retExpr.key_eq(ret.getResult()) &&
-                    !is_sanitized_return_expr(retExpr)
-                ) {
-                    return true
-                }
-            }
-        }
-    }
-}
-
-fn is_sanitized_return_method(m: Method) -> bool {
-    return
-        method_has_sanitized_return(m) &&
-        !method_has_unsanitized_return(m)
-}
-
-fn is_sanitized_call_result(c: MethodAccessExpression) -> bool {
-    for (m in Method(default_java_db())) {
-        if (c.getMethod().key_eq(m) && is_sanitized_return_method(m)) {
-            return true
-        }
-    }
-}
+fn is_xss_sanitizer_call(c: MethodAccessExpression) -> bool { return isXssSanitizerCall(c) }
+fn is_sanitizer_expr(e: Expression) -> bool { return isXssSanitizerExpr(e) }
+fn var_has_sanitized_value(v: Variable) -> bool { return xssVarHasSanitizedValue(v) }
+fn is_sanitized_return_expr(e: Expression) -> bool { return isXssSanitizedReturnExpr(e) }
+fn method_has_sanitized_return(m: Method) -> bool { return xssMethodHasSanitizedReturn(m) }
+fn method_has_unsanitized_return(m: Method) -> bool { return xssMethodHasUnsanitizedReturn(m) }
+fn is_sanitized_return_method(m: Method) -> bool { return isXssSanitizedReturnMethod(m) }
+fn is_sanitized_call_result(c: MethodAccessExpression) -> bool { return isXssSanitizedCallResult(c) }
 
 // -------------------------
 // Non-XSS domain result barriers
 // -------------------------
-fn is_sql_jdbc_domain_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return
-            t.contains(".executeQuery(") ||
-            t.contains(".executeUpdate(") ||
-            t.contains(".execute(") ||
-            t.contains(".queryForObject(") ||
-            t.contains(".queryForList(") ||
-            t.contains(".query(") ||
-            t.contains(".getString(") ||
-            t.contains(".getObject(") ||
-            t.contains(".getInt(") ||
-            t.contains(".getLong(") ||
-            t.contains(".getDouble(") ||
-            t.contains(".getFloat(") ||
-            t.contains(".getBoolean(")
-    }
-}
-
-fn is_ldap_jndi_domain_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return
-            t.contains(".search(") ||
-            t.contains(".next(") ||
-            t.contains(".nextElement(") ||
-            t.contains(".getAttributes(") ||
-            t.contains(".getAll(") ||
-            t.contains(".getAttribute(")
-    }
-}
-
-fn is_xpath_xml_dom_domain_call(c: MethodAccessExpression) -> bool {
-    let (t = c.getPrintableText()) {
-        return
-            t.contains(".evaluate(") ||
-            t.contains(".getTextContent(") ||
-            t.contains(".getNodeValue(") ||
-            t.contains(".getAttribute(") ||
-            t.contains(".getElementsByTagName(") ||
-            t.contains(".item(")
-    }
-}
-
-fn is_non_xss_domain_call_result(c: MethodAccessExpression) -> bool {
-    return
-        is_sql_jdbc_domain_call(c) ||
-        is_ldap_jndi_domain_call(c) ||
-        is_xpath_xml_dom_domain_call(c)
-}
-
-fn is_non_xss_domain_expr(e: Expression) -> bool {
-    for (c in MethodAccessExpression(default_java_db())) {
-        if (e.key_eq(c) && is_non_xss_domain_call_result(c)) {
-            return true
-        }
-    }
-}
+fn is_sql_jdbc_domain_call(c: MethodAccessExpression) -> bool { return isSqlJdbcDomainCall(c) }
+fn is_ldap_jndi_domain_call(c: MethodAccessExpression) -> bool { return isLdapJndiDomainCall(c) }
+fn is_xpath_xml_dom_domain_call(c: MethodAccessExpression) -> bool { return isXpathXmlDomDomainCall(c) }
+fn is_non_xss_domain_call_result(c: MethodAccessExpression) -> bool { return isNonXssDomainCallResult(c) }
+fn is_non_xss_domain_expr(e: Expression) -> bool { return isNonXssDomainExpr(e) }
 
 // -------------------------
 // Generic helpers
 // -------------------------
 fn call_has_tainted_argument(c: MethodAccessExpression) -> bool {
-    for (rel in ExpressionListExpressionRelation(default_java_db())) {
-        if (
-            rel.getExpressionList().key_eq(c.getExpressionList()) &&
-            is_tainted_expr(rel.getExpression())
-        ) {
-            return true
-        }
-    }
+    return xssCallHasTaintedArgument(c)
 }
 
 fn call_has_tainted_receiver(c: MethodAccessExpression) -> bool {
-    for (recv in Expression(default_java_db())) {
-        if (recv.key_eq(c.getCallSite()) && is_tainted_expr(recv)) {
-            return true
-        }
-    }
+    return xssCallHasTaintedReceiver(c)
 }
 
 fn new_has_tainted_argument(n: NewExpression) -> bool {
-    for (elist in ExpressionList(default_java_db())) {
-        if (n.key_eq(elist.getParent())) {
-            for (rel in ExpressionListExpressionRelation(default_java_db())) {
-                if (
-                    rel.getExpressionList().key_eq(elist) &&
-                    is_tainted_expr(rel.getExpression())
-                ) {
-                    return true
-                }
-            }
-        }
-    }
+    return xssNewHasTaintedArgument(n)
 }
 
 fn call_targets_callable(c: MethodAccessExpression, callee: Callable) -> bool {
-    for (m in Method(default_java_db())) {
-        if (callee.key_eq(m) && c.getMethod().key_eq(m)) {
-            return true
-        }
-    }
-
-    for (k in Constructor(default_java_db())) {
-        if (callee.key_eq(k) && c.getConstructor().key_eq(k)) {
-            return true
-        }
-    }
+    return callTargetsCallable(c, callee)
 }
 
 // -------------------------
 // Taint propagation
 // -------------------------
 fn is_tainted_var(v: Variable) -> bool {
-    for (lv in LocalVariable(default_java_db())) {
-        if (v.key_eq(lv) && is_tainted_expr(lv.getExpression())) {
-            return true
-        }
-    }
-
-    for (ae in AssignmentExpression(default_java_db())) {
-        if (is_tainted_expr(ae.getSource())) {
-            for (dstRef in ReferenceExpression(default_java_db())) {
-                if (dstRef.key_eq(ae.getDestination())) {
-                    for (dstVar in Variable(default_java_db())) {
-                        if (dstVar.key_eq(dstRef.getDefinition()) && v.key_eq(dstVar)) {
-                            return true
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    for (p in Parameter(default_java_db())) {
-        if (v.key_eq(p)) {
-            for (owner in Callable(default_java_db())) {
-                if (owner.key_eq(p.getParent())) {
-                    let (idx = p.getIndex()) {
-                        for (call in MethodAccessExpression(default_java_db())) {
-                            if (
-                                call_targets_callable(call, owner) &&
-                                is_tainted_expr(call.getArgument(idx))
-                            ) {
-                                return true
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    for (fs in ForeachStatement(default_java_db())) {
-        if (is_tainted_expr(fs.getIteratedValue())) {
-            for (it in Variable(default_java_db())) {
-                if (it.key_eq(fs.getIterationParameter()) && v.key_eq(it)) {
-                    return true
-                }
-            }
-        }
-    }
-
-    // Collection / builder receiver taint. This is intentionally broad and
-    // keeps recall for common append/add/put flows; precise key/index modeling
-    // is not part of this rebuilt checker.
-    for (call in MethodAccessExpression(default_java_db())) {
-        if (call_has_tainted_argument(call)) {
-            let (t = call.getPrintableText()) {
-                if (
-                    t.contains(".put(") ||
-                    t.contains(".add(") ||
-                    t.contains(".addAll(") ||
-                    t.contains(".set(") ||
-                    t.contains(".insert(") ||
-                    t.contains(".append(")
-                ) {
-                    for (recv in ReferenceExpression(default_java_db())) {
-                        if (recv.key_eq(call.getCallSite())) {
-                            for (recvVar in Variable(default_java_db())) {
-                                if (recvVar.key_eq(recv.getDefinition()) && v.key_eq(recvVar)) {
-                                    return true
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    return isXssTaintedVar(v)
 }
 
 fn is_tainted_expr(e: Expression) -> bool {
-    if (is_source_expr(e)) {
-        return true
-    }
-    if (is_header_name_enumeration_source_expr(e)) {
-        return true
-    }
-    if (is_header_enumeration_next_element_expr(e)) {
-        return true
-    }
-    if (is_header_value_enumeration_expr(e)) {
-        return true
-    }
-
-    for (v in Variable(default_java_db())) {
-        if (is_tainted_var(v)) {
-            for (ref in v.getDirectUsage()) {
-                if (e.key_eq(ref)) {
-                    return true
-                }
-            }
-        }
-    }
-
-    // Upward AST propagation for concatenation, casts, arrays, and wrapper
-    // expressions. Sanitizer calls are terminal for taint.
-    for (child in Expression(default_java_db())) {
-        if (
-            is_tainted_expr(child) &&
-            e.key_eq(child.getParent()) &&
-            !is_sanitizer_expr(e) &&
-            !is_non_xss_domain_expr(e)
-        ) {
-            return true
-        }
-    }
-
-    // Generic call-result propagation covers common string-preserving APIs
-    // such as trim/substring/concat/toString/String.valueOf/URLDecoder.decode.
-    // The two barriers below prevent known sanitized returns and non-XSS query
-    // result domains from being re-tainted solely because an input argument or
-    // receiver was tainted.
-    for (call in MethodAccessExpression(default_java_db())) {
-        if (
-            e.key_eq(call) &&
-            !is_xss_sanitizer_call(call) &&
-            !is_sanitized_call_result(call) &&
-            !is_non_xss_domain_call_result(call) &&
-            (
-                call_has_tainted_argument(call) ||
-                call_has_tainted_receiver(call)
-            )
-        ) {
-            return true
-        }
-    }
-
-    for (n in NewExpression(default_java_db())) {
-        if (e.key_eq(n) && new_has_tainted_argument(n)) {
-            return true
-        }
-    }
-
-    // Explicit inter-procedural return propagation. This remains independent
-    // from the sanitized-call barrier: if a callee explicitly returns tainted
-    // data, its call result stays tainted.
-    for (call in MethodAccessExpression(default_java_db())) {
-        if (e.key_eq(call)) {
-            for (m in Method(default_java_db())) {
-                if (call.getMethod().key_eq(m)) {
-                    for (ret in ReturnStatement(default_java_db())) {
-                        if (
-                            ret.getEnclosingCallable().key_eq(m) &&
-                            is_tainted_expr(ret.getResult())
-                        ) {
-                            return true
-                        }
-                    }
-                }
-            }
-        }
-    }
+    return isXssTaintedExpr(e)
 }
 
 // -------------------------

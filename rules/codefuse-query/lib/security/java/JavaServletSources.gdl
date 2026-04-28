@@ -1,0 +1,100 @@
+// Shared Java servlet/request source modeling for security checkers.
+use coref::java::*
+
+fn source_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+pub fn isServletTaintSourceCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".getParameter(") ||
+            t.contains(".getParameterMap(") ||
+            t.contains(".getParameterValues(") ||
+            t.contains(".getParameterNames(") ||
+            t.contains(".getHeader(") ||
+            t.contains(".getHeaders(") ||
+            t.contains(".getQueryString(") ||
+            t.contains(".getCookies(") ||
+            t.contains(".getPathInfo(") ||
+            t.contains(".getRequestURI(") ||
+            t.contains(".getTheParameter(")
+    }
+}
+
+pub fn isServletXssTaintSourceCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            isServletTaintSourceCall(c) ||
+            t.contains(".getRequestURL(") ||
+            t.contains(".getServletPath(")
+    }
+}
+
+pub fn isServletTaintSourceExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(source_java_db())) {
+        if (e.key_eq(c) && isServletTaintSourceCall(c)) {
+            return true
+        }
+    }
+}
+
+pub fn isServletXssTaintSourceExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(source_java_db())) {
+        if (e.key_eq(c) && isServletXssTaintSourceCall(c)) {
+            return true
+        }
+    }
+}
+
+pub fn isServletTaintSourceStmt(s: Statement) -> bool {
+    let (t = s.getPrintableText()) {
+        return
+            t.contains(".getParameter(") ||
+            t.contains(".getParameterMap(") ||
+            t.contains(".getParameterValues(") ||
+            t.contains(".getParameterNames(") ||
+            t.contains(".getHeader(") ||
+            t.contains(".getHeaders(") ||
+            t.contains(".getQueryString(") ||
+            t.contains(".getCookies(") ||
+            t.contains(".getPathInfo(") ||
+            t.contains(".getRequestURI(") ||
+            t.contains(".getTheParameter(")
+    }
+}
+
+pub fn isServletXssTaintSourceStmt(s: Statement) -> bool {
+    let (t = s.getPrintableText()) {
+        return
+            isServletTaintSourceStmt(s) ||
+            t.contains(".getRequestURL(") ||
+            t.contains(".getServletPath(")
+    }
+}
+
+pub fn isHeaderNameEnumerationCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".getHeaderNames(")
+    }
+}
+
+pub fn isHeaderValueEnumerationCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".getHeaders(")
+    }
+}
+
+pub fn isEnumerationNextElementCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".nextElement(")
+    }
+}
+
+pub fn isHeaderNameEnumerationSourceExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(source_java_db())) {
+        if (e.key_eq(c) && isHeaderNameEnumerationCall(c)) {
+            return true
+        }
+    }
+}

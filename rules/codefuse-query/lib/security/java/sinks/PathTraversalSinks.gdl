@@ -1,0 +1,27 @@
+// CWE-022 path traversal sink modeling.
+use coref::java::*
+
+pub fn isPathSinkNew(n: NewExpression) -> bool {
+    let (t = n.getPrintableText()) {
+        return
+            t.contains("new java.io.File(") ||
+            t.contains("new java.io.FileInputStream(") ||
+            t.contains("new java.io.FileOutputStream(") ||
+            t.contains("new java.io.FileReader(") ||
+            t.contains("new java.io.FileWriter(") ||
+            t.contains("new java.io.RandomAccessFile(") ||
+            t.contains("new java.util.zip.ZipFile(")
+    }
+}
+
+pub fn isPathSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains("java.nio.file.Files.newInputStream(") ||
+            t.contains("java.nio.file.Files.newOutputStream(") ||
+            t.contains("java.nio.file.Files.readAllBytes(") ||
+            t.contains("java.nio.file.Files.readAllLines(") ||
+            t.contains("java.nio.file.Files.readString(") ||
+            t.contains("java.nio.file.Files.write(")
+    }
+}

@@ -1,0 +1,52 @@
+// CWE-079 XSS response/JSP output sink modeling.
+use coref::java::*
+
+pub fn isPotentialXssSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".print(") ||
+            t.contains(".println(") ||
+            t.contains(".write(") ||
+            t.contains(".format(") ||
+            t.contains(".printf(") ||
+            t.contains(".sendError(")
+    }
+}
+
+pub fn isNonWebSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains("System.out.print(") ||
+            t.contains("System.out.println(") ||
+            t.contains("System.out.write(") ||
+            t.contains("System.out.printf(") ||
+            t.contains("System.out.format(") ||
+            t.contains("System.err.print(") ||
+            t.contains("System.err.println(") ||
+            t.contains("System.err.write(") ||
+            t.contains("System.err.printf(") ||
+            t.contains("System.err.format(")
+    }
+}
+
+pub fn isWebResponseSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains("response.") ||
+            t.contains(".getWriter()") ||
+            t.contains(".getOutputStream()") ||
+            t.contains("out.print(") ||
+            t.contains("out.println(") ||
+            t.contains("out.write(") ||
+            t.contains("out.format(") ||
+            t.contains("out.printf(") ||
+            t.contains(".sendError(")
+    }
+}
+
+pub fn isXssSinkCall(c: MethodAccessExpression) -> bool {
+    return
+        isPotentialXssSinkCall(c) &&
+        isWebResponseSinkCall(c) &&
+        !isNonWebSinkCall(c)
+}
