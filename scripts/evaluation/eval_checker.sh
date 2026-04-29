@@ -34,19 +34,52 @@ EVAL_DIR="experiments/cwe-${CWE_ID}/eval/codefuse_eval"
 JSON_FILE="${RESULT_DIR}/checker${CWE_ID}.json"
 CSV_FILE="${RESULT_DIR}/cwe${CWE_ID}_codefuse.csv"
 
+GODEL_BIN="${GODEL_BIN:-/home/ubuntu64/tools/static-analysis-tools/codefuse/sparrow-cli-2.1.0.linux/sparrow-cli/godel-script/usr/bin/godel}"
+OFFICIAL_LIB="${OFFICIAL_LIB:-/home/ubuntu64/tools/static-analysis-tools/codefuse/sparrow-cli-2.1.0.linux/sparrow-cli/lib}"
+LOCAL_LIB="${LOCAL_LIB:-${PROJECT_ROOT}/rules/codefuse-query/lib}"
+
 echo "============================================"
 echo " CWE-${CWE_ID} 评测流水线"
 echo "============================================"
 echo ""
 
-# Step 1: Run Sparrow query
+# Step 1: Run CodeFuse-Query through godel
 echo "[1/3] 正在执行 CodeFuse-Query 规则检测..."
 echo "  规则: ${RULE_FILE}"
 mkdir -p "${RESULT_DIR}"
-sparrow query run \
-  -d "${DB_DIR}" \
-  -gdl "${RULE_FILE}" \
-  -o "${RESULT_DIR}"
+
+if [ ! -x "${GODEL_BIN}" ]; then
+    echo "❌ 错误: 找不到 godel 可执行文件: ${GODEL_BIN}"
+    exit 1
+fi
+
+if [ ! -d "${OFFICIAL_LIB}" ]; then
+    echo "❌ 错误: 找不到官方 CodeFuse-Query lib: ${OFFICIAL_LIB}"
+    exit 1
+fi
+
+if [ ! -d "${LOCAL_LIB}" ]; then
+    echo "❌ 错误: 找不到仓库本地 CodeFuse-Query lib: ${LOCAL_LIB}"
+    exit 1
+fi
+
+GODEL_PACKAGE_ROOT="$(mktemp -d)"
+cleanup_godel_package_root() {
+    rm -rf "${GODEL_PACKAGE_ROOT}"
+}
+trap cleanup_godel_package_root EXIT
+
+# godel 2.1.0 effectively resolves modules from one package root. Build a
+# temporary root containing official modules plus this repo's local modules.
+cp -R "${OFFICIAL_LIB}/." "${GODEL_PACKAGE_ROOT}/"
+cp -R "${LOCAL_LIB}/." "${GODEL_PACKAGE_ROOT}/"
+
+"${GODEL_BIN}" \
+  -p "${GODEL_PACKAGE_ROOT}" \
+  -f "${PROJECT_ROOT}/${DB_DIR}" \
+  -Of \
+  -r "${PROJECT_ROOT}/${RULE_FILE}" \
+  --output-json "${PROJECT_ROOT}/${JSON_FILE}"
 
 if [ ! -f "${JSON_FILE}" ]; then
     echo "❌ 错误: 未生成 JSON 结果文件: ${JSON_FILE}"

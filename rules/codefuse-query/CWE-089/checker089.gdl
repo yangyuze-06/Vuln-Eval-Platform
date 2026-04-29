@@ -1,0 +1,119 @@
+// script
+use coref::java::*
+use security::java::JavaServletSources::*
+use security::java::TaintHelpers::*
+use security::java::TaintTracking::*
+use security::java::sanitizers::SqlInjectionSanitizers::*
+use security::java::sinks::SqlInjectionSinks::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// -------------------------
+// Source modeling
+// -------------------------
+fn is_cwe089_source_expr(e: Expression) -> bool {
+    return isServletTaintSourceExpr(e)
+}
+
+fn is_cwe089_source_stmt(s: Statement) -> bool {
+    return isServletTaintSourceStmt(s)
+}
+
+fn is_cwe089_source_call(c: MethodAccessExpression) -> bool {
+    return isServletTaintSourceCall(c)
+}
+
+// -------------------------
+// Sink modeling
+// -------------------------
+fn is_sqli_sink_call(c: MethodAccessExpression) -> bool {
+    return isSqlInjectionSinkCall(c)
+}
+
+fn is_statement_sql_execution_call(c: MethodAccessExpression) -> bool {
+    return isStatementSqlExecutionCall(c)
+}
+
+fn is_prepared_statement_concat_call(c: MethodAccessExpression) -> bool {
+    return isPreparedStatementConcatCall(c)
+}
+
+// -------------------------
+// Sanitizer/barrier modeling
+// -------------------------
+fn is_sqli_sanitizer_call(c: MethodAccessExpression) -> bool {
+    return isSqlInjectionSanitizerCall(c)
+}
+
+fn is_sqli_sanitizer_expr(e: Expression) -> bool {
+    return isSqlInjectionSanitizerExpr(e)
+}
+
+fn is_sqli_barrier_call(c: MethodAccessExpression) -> bool {
+    return isSqlInjectionBarrierCall(c)
+}
+
+fn is_sqli_barrier_expr(e: Expression) -> bool {
+    return isSqlInjectionBarrierExpr(e)
+}
+
+// -------------------------
+// Helpers
+// -------------------------
+fn call_has_tainted_argument(c: MethodAccessExpression) -> bool {
+    return callHasTaintedArgument(c)
+}
+
+fn call_has_tainted_sql_argument(c: MethodAccessExpression) -> bool {
+    for (arg in Expression(default_java_db())) {
+        if (
+            callArgument(c, arg) &&
+            arg.key_eq(c.getArgument(0)) &&
+            isTaintedExpr(arg)
+        ) {
+            return true
+        }
+    }
+}
+
+fn call_targets_callable(c: MethodAccessExpression, callee: Callable) -> bool {
+    return callTargetsCallable(c, callee)
+}
+
+// -------------------------
+// Findings
+// -------------------------
+fn cwe089_sqli_findings(
+    ruleId: string,
+    sinkFile: string,
+    line: int
+) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (is_sqli_sink_call(c)) {
+            let (loc = c.getLocation()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-089" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            if (
+                                call_has_tainted_sql_argument(c) &&
+                                !is_sqli_sanitizer_call(c)
+                            ) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(cwe089_sqli_findings())
+}

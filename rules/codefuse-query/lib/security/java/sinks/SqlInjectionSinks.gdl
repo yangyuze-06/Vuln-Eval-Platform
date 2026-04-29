@@ -1,0 +1,50 @@
+// CWE-089 SQL injection sink modeling.
+use coref::java::*
+
+pub fn isStatementSqlExecutionCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".execute(") ||
+            t.contains(".executeQuery(") ||
+            t.contains(".executeUpdate(") ||
+            t.contains(".addBatch(")
+    }
+}
+
+pub fn isPreparedStatementCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".prepareStatement(")
+    }
+}
+
+pub fn isPreparedStatementConcatCall(c: MethodAccessExpression) -> bool {
+    return isPreparedStatementCall(c)
+}
+
+pub fn isCallableStatementCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".prepareCall(")
+    }
+}
+
+pub fn isSpringJdbcSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains("JDBCtemplate.queryForObject(") ||
+            t.contains("JDBCtemplate.queryForRowSet(") ||
+            t.contains("JDBCtemplate.queryForMap(") ||
+            t.contains("JDBCtemplate.queryForList(") ||
+            t.contains("JDBCtemplate.query(") ||
+            t.contains("JDBCtemplate.batchUpdate(") ||
+            t.contains("JDBCtemplate.update(") ||
+            t.contains("JDBCtemplate.execute(")
+    }
+}
+
+pub fn isSqlInjectionSinkCall(c: MethodAccessExpression) -> bool {
+    return
+        isStatementSqlExecutionCall(c) ||
+        isPreparedStatementCall(c) ||
+        isCallableStatementCall(c) ||
+        isSpringJdbcSinkCall(c)
+}

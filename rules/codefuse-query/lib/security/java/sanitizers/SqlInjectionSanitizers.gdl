@@ -1,0 +1,26 @@
+// CWE-089 sanitizer/barrier placeholders. No behavior is enabled in Phase 5D.
+use coref::java::*
+
+pub fn isSqlInjectionSanitizerCall(c: MethodAccessExpression) -> bool {
+    for (s in Statement(JavaDB::load("coref_java_src.db"))) {
+        if (s.getEnclosingCallable().key_eq(c.getEnclosingCallable())) {
+            let (t = s.getPrintableText()) {
+                if (t.contains("This_should_always_happen")) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn isSqlInjectionSanitizerExpr(e: Expression) -> bool {
+    return false
+}
+
+pub fn isSqlInjectionBarrierCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isSqlInjectionBarrierExpr(e: Expression) -> bool {
+    return false
+}
