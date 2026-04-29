@@ -1,0 +1,87 @@
+// CWE-327 broken/risky cryptographic algorithm modeling.
+use coref::java::*
+
+fn crypto_sink_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+pub fn isCipherGetInstanceCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains("Cipher.getInstance(")
+    }
+}
+
+pub fn isSslContextGetInstanceCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains("SSLContext.getInstance(")
+    }
+}
+
+pub fn isWeakCryptoAlgorithmExpr(e: Expression) -> bool {
+    let (t = e.getPrintableText()) {
+        return
+            t.contains("\"DES\"") ||
+            t.contains("\"DES/") ||
+            t.contains("\"DESede\"") ||
+            t.contains("\"DESede/") ||
+            t.contains("\"RC4\"") ||
+            t.contains("\"ARCFOUR\"") ||
+            t.contains("\"AES/ECB/") ||
+            t.contains("\"SSL\"") ||
+            t.contains("\"SSLv3\"") ||
+            t.contains("\"TLSv1\"") ||
+            t.contains("\"TLSv1.0\"")
+    }
+}
+
+fn isWeakAlgorithmLocalValue(v: Variable) -> bool {
+    for (lv in LocalVariable(crypto_sink_java_db())) {
+        if (v.key_eq(lv)) {
+            if (isWeakCryptoAlgorithmExpr(lv.getExpression())) {
+                return true
+            }
+        }
+    }
+
+    for (ae in AssignmentExpression(crypto_sink_java_db())) {
+        for (dstRef in ReferenceExpression(crypto_sink_java_db())) {
+            if (dstRef.key_eq(ae.getDestination())) {
+                if (v.key_eq(dstRef.getDefinition())) {
+                    if (isWeakCryptoAlgorithmExpr(ae.getSource())) {
+                        return true
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn callFirstArgIsWeakAlgorithm(c: MethodAccessExpression) -> bool {
+    if (isWeakCryptoAlgorithmExpr(c.getArgument(0))) {
+        return true
+    }
+
+    for (argRef in ReferenceExpression(crypto_sink_java_db())) {
+        if (argRef.key_eq(c.getArgument(0))) {
+            for (v in Variable(crypto_sink_java_db())) {
+                if (v.key_eq(argRef.getDefinition()) && isWeakAlgorithmLocalValue(v)) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn isWeakCipherGetInstanceCall(c: MethodAccessExpression) -> bool {
+    return isCipherGetInstanceCall(c) && callFirstArgIsWeakAlgorithm(c)
+}
+
+pub fn isWeakSslContextGetInstanceCall(c: MethodAccessExpression) -> bool {
+    return isSslContextGetInstanceCall(c) && callFirstArgIsWeakAlgorithm(c)
+}
+
+pub fn isCryptoAlgorithmMisuseCall(c: MethodAccessExpression) -> bool {
+    return
+        isWeakCipherGetInstanceCall(c) ||
+        isWeakSslContextGetInstanceCall(c)
+}

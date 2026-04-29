@@ -1,25 +1,40 @@
-# Running Modular CodeFuse-Query Checkers
+# 运行模块化 CodeFuse-Query Checker
 
-The modular Java checkers import both the official CodeFuse schema modules and
-the repository-local security modules under `rules/codefuse-query/lib`.
+模块化 Java checker 同时依赖官方 CodeFuse schema 模块，以及仓库本地的安全规则模块：
 
-Use the evaluation runner:
+```text
+rules/codefuse-query/lib
+```
+
+## 推荐方式
+
+使用统一评测 runner：
 
 ```bash
 ./scripts/evaluation/eval_checker.sh 089
 ./scripts/evaluation/eval_checker.sh 022
 ./scripts/evaluation/eval_checker.sh 078
 ./scripts/evaluation/eval_checker.sh 079
+./scripts/evaluation/eval_checker.sh 328
+./scripts/evaluation/eval_checker.sh 501
 ```
 
-The runner executes the underlying `godel` binary directly and writes the JSON
-output to the existing path:
+runner 会直接调用底层 `godel` 可执行文件，并输出 JSON 到固定路径：
 
 ```text
 experiments/cwe-<ID>/results/codefuse-query/checker<ID>.json
 ```
 
-Equivalent command shape used by the runner:
+随后 runner 会把 JSON 转换为 CSV，并调用 evaluator 生成：
+
+```text
+experiments/cwe-<ID>/eval/codefuse_eval/metrics.json
+experiments/cwe-<ID>/eval/codefuse_eval/tp.csv
+experiments/cwe-<ID>/eval/codefuse_eval/fp.csv
+experiments/cwe-<ID>/eval/codefuse_eval/fn.csv
+```
+
+## runner 使用的等价命令形态
 
 ```bash
 GODEL_BIN=/home/ubuntu64/tools/static-analysis-tools/codefuse/sparrow-cli-2.1.0.linux/sparrow-cli/godel-script/usr/bin/godel
@@ -40,3 +55,9 @@ cp -R "$LOCAL_LIB/." "$TMP_PACKAGE_ROOT/"
   -r "$CHECKER" \
   --output-json "$OUTPUT_JSON"
 ```
+
+## 注意事项
+
+- Godel 2.1.0 对 package root 的处理较严格，因此 runner 会临时合并官方 lib 和本地 lib。
+- 新 checker 应优先通过 `eval_checker.sh` 运行，避免手工命令遗漏 package root workaround。
+- 如果 query 能生成 JSON 但 evaluator 失败，优先检查 CWE 编号、CSV 转换结果和 ground truth 支持情况。

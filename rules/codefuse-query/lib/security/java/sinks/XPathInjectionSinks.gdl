@@ -1,0 +1,108 @@
+// CWE-643 XPath injection sink modeling.
+use coref::java::*
+
+fn xpath_sink_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+fn hasXPathContextEvidence(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        if (
+            t.contains("XPath") ||
+            t.contains("xpath") ||
+            t.contains("javax.xml.xpath") ||
+            t.contains("XPathFactory") ||
+            t.contains("XPathExpression") ||
+            t.contains("XPathConstants")
+        ) {
+            return true
+        }
+    }
+
+    for (s in Statement(xpath_sink_java_db())) {
+        if (s.getEnclosingCallable().key_eq(c.getEnclosingCallable())) {
+            let (st = s.getPrintableText()) {
+                if (
+                    st.contains("XPath") ||
+                    st.contains("xpath") ||
+                    st.contains("javax.xml.xpath") ||
+                    st.contains("XPathFactory") ||
+                    st.contains("XPathExpression") ||
+                    st.contains("XPathConstants") ||
+                    st.contains("DocumentBuilder") ||
+                    st.contains("xmlDocument")
+                ) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn isXPathEvaluateCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".evaluate(") && hasXPathContextEvidence(c)
+    }
+}
+
+pub fn isXPathCompileCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".compile(") && hasXPathContextEvidence(c)
+    }
+}
+
+pub fn isJaxenXPathSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            (
+                t.contains(".selectNodes(") ||
+                t.contains(".selectSingleNode(") ||
+                t.contains(".valueOf(") ||
+                t.contains(".booleanValueOf(")
+            ) &&
+            (
+                t.contains("jaxen") ||
+                hasXPathContextEvidence(c)
+            )
+    }
+}
+
+pub fn isDom4jXPathSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".selectNodes(") ||
+            t.contains(".selectSingleNode(") ||
+            t.contains(".createXPath(")
+    }
+}
+
+pub fn isJdomXPathSinkCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            (
+                t.contains(".selectNodes(") ||
+                t.contains(".selectSingleNode(")
+            ) &&
+            (
+                t.contains("jdom") ||
+                hasXPathContextEvidence(c)
+            )
+    }
+}
+
+pub fn isXPathInjectionSinkCall(c: MethodAccessExpression) -> bool {
+    return
+        isXPathEvaluateCall(c) ||
+        isXPathCompileCall(c) ||
+        isJaxenXPathSinkCall(c) ||
+        isDom4jXPathSinkCall(c) ||
+        isJdomXPathSinkCall(c)
+}
+
+pub fn isXPathInjectionSinkExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(xpath_sink_java_db())) {
+        if (e.key_eq(c) && isXPathInjectionSinkCall(c)) {
+            return true
+        }
+    }
+}

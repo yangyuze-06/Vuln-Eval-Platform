@@ -1,0 +1,108 @@
+// script
+use coref::java::*
+use security::java::JavaServletSources::*
+use security::java::TaintTracking::*
+use security::java::sanitizers::TrustBoundarySanitizers::*
+use security::java::sinks::TrustBoundarySinks::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// -------------------------
+// Source modeling
+// -------------------------
+fn is_cwe501_source_expr(e: Expression) -> bool {
+    return isServletTaintSourceExpr(e)
+}
+
+fn is_cwe501_source_stmt(s: Statement) -> bool {
+    return isServletTaintSourceStmt(s)
+}
+
+fn is_cwe501_source_call(c: MethodAccessExpression) -> bool {
+    return isServletTaintSourceCall(c)
+}
+
+// -------------------------
+// Sink modeling
+// -------------------------
+fn is_trust_boundary_sink_call(c: MethodAccessExpression) -> bool {
+    return isTrustBoundarySinkCall(c)
+}
+
+fn is_trust_boundary_sink_expr(e: Expression) -> bool {
+    return isTrustBoundarySinkExpr(e)
+}
+
+// -------------------------
+// Sanitizer/barrier modeling
+// -------------------------
+fn is_trust_boundary_sanitizer_call(c: MethodAccessExpression) -> bool {
+    return isTrustBoundarySanitizerCall(c)
+}
+
+fn is_trust_boundary_sanitizer_expr(e: Expression) -> bool {
+    return isTrustBoundarySanitizerExpr(e)
+}
+
+fn is_trust_boundary_barrier_call(c: MethodAccessExpression) -> bool {
+    return isTrustBoundaryBarrierCall(c)
+}
+
+fn is_trust_boundary_barrier_expr(e: Expression) -> bool {
+    return isTrustBoundaryBarrierExpr(e)
+}
+
+// -------------------------
+// Helpers
+// -------------------------
+fn has_tainted_trust_boundary_argument(c: MethodAccessExpression) -> bool {
+    for (arg in Expression(default_java_db())) {
+        if (
+            (
+                arg.key_eq(c.getArgument(0)) ||
+                arg.key_eq(c.getArgument(1))
+            ) &&
+            isTaintedExpr(arg)
+        ) {
+            return true
+        }
+    }
+}
+
+// -------------------------
+// Findings
+// -------------------------
+fn cwe501_trust_boundary_findings(
+    ruleId: string,
+    sinkFile: string,
+    line: int
+) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (is_trust_boundary_sink_call(c)) {
+            let (loc = c.getLocation()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-501" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            if (
+                                has_tainted_trust_boundary_argument(c) &&
+                                !is_trust_boundary_sanitizer_call(c)
+                            ) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(cwe501_trust_boundary_findings())
+}

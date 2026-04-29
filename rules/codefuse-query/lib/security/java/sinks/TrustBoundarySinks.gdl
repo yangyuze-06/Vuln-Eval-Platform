@@ -1,0 +1,60 @@
+// CWE-501 trust-boundary sink modeling for servlet state writes.
+use coref::java::*
+
+fn trust_boundary_sink_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+fn hasTrustStateEvidence(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        if (
+            t.contains(".getSession().") ||
+            t.contains("HttpSession") ||
+            t.contains("ServletContext") ||
+            t.contains("getServletContext()")
+        ) {
+            return true
+        }
+    }
+
+    for (s in Statement(trust_boundary_sink_java_db())) {
+        if (s.getEnclosingCallable().key_eq(c.getEnclosingCallable())) {
+            let (st = s.getPrintableText()) {
+                if (
+                    st.contains("HttpSession") ||
+                    st.contains("ServletContext") ||
+                    st.contains("getSession()") ||
+                    st.contains("getServletContext()")
+                ) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn isTrustBoundarySetAttributeCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".setAttribute(") && hasTrustStateEvidence(c)
+    }
+}
+
+pub fn isTrustBoundaryPutValueCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".putValue(") && hasTrustStateEvidence(c)
+    }
+}
+
+pub fn isTrustBoundarySinkCall(c: MethodAccessExpression) -> bool {
+    return
+        isTrustBoundarySetAttributeCall(c) ||
+        isTrustBoundaryPutValueCall(c)
+}
+
+pub fn isTrustBoundarySinkExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(trust_boundary_sink_java_db())) {
+        if (e.key_eq(c) && isTrustBoundarySinkCall(c)) {
+            return true
+        }
+    }
+}

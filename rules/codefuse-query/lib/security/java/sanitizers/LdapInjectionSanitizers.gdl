@@ -1,0 +1,18 @@
+// CWE-090 sanitizer/barrier placeholders. No behavior is enabled in Phase 5F.
+use coref::java::*
+
+pub fn isLdapInjectionSanitizerCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isLdapInjectionSanitizerExpr(e: Expression) -> bool {
+    return false
+}
+
+pub fn isLdapInjectionBarrierCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isLdapInjectionBarrierExpr(e: Expression) -> bool {
+    return false
+}

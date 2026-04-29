@@ -1,0 +1,57 @@
+// script
+use coref::java::*
+use security::java::sinks::WeakHashSinks::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// -------------------------
+// Weak hash API modeling
+// -------------------------
+fn is_message_digest_get_instance_call(c: MethodAccessExpression) -> bool {
+    return isMessageDigestGetInstanceCall(c)
+}
+
+fn is_weak_message_digest_get_instance_call(c: MethodAccessExpression) -> bool {
+    return isWeakMessageDigestGetInstanceCall(c)
+}
+
+fn is_commons_codec_weak_digest_call(c: MethodAccessExpression) -> bool {
+    return isCommonsCodecWeakDigestCall(c)
+}
+
+fn is_weak_hash_misuse_call(c: MethodAccessExpression) -> bool {
+    return isWeakHashMisuseCall(c)
+}
+
+// -------------------------
+// Findings
+// -------------------------
+fn cwe328_hash_findings(
+    ruleId: string,
+    sinkFile: string,
+    line: int
+) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (is_weak_hash_misuse_call(c)) {
+            let (loc = c.getLocation()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-328" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(cwe328_hash_findings())
+}

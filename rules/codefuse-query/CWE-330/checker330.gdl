@@ -1,0 +1,71 @@
+// script
+use coref::java::*
+use security::java::sinks::WeakRandomSinks::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// -------------------------
+// Weak randomness API modeling
+// -------------------------
+fn is_weak_random_new(n: NewExpression) -> bool {
+    return isWeakRandomNew(n)
+}
+
+fn is_math_random_call(c: MethodAccessExpression) -> bool {
+    return isMathRandomCall(c)
+}
+
+fn is_weak_random_call(c: MethodAccessExpression) -> bool {
+    return isWeakRandomCall(c)
+}
+
+// -------------------------
+// Findings
+// -------------------------
+fn cwe330_random_findings(
+    ruleId: string,
+    sinkFile: string,
+    line: int
+) -> bool {
+    for (n in NewExpression(default_java_db())) {
+        if (is_weak_random_new(n)) {
+            let (loc = n.getLocation()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-330" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (is_weak_random_call(c)) {
+            let (loc = c.getLocation()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-330" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(cwe330_random_findings())
+}

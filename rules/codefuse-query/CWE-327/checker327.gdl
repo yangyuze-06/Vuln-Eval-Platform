@@ -1,0 +1,61 @@
+// script
+use coref::java::*
+use security::java::sinks::CryptoAlgorithmSinks::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// -------------------------
+// Crypto API modeling
+// -------------------------
+fn is_cipher_get_instance_call(c: MethodAccessExpression) -> bool {
+    return isCipherGetInstanceCall(c)
+}
+
+fn is_ssl_context_get_instance_call(c: MethodAccessExpression) -> bool {
+    return isSslContextGetInstanceCall(c)
+}
+
+fn is_weak_cipher_get_instance_call(c: MethodAccessExpression) -> bool {
+    return isWeakCipherGetInstanceCall(c)
+}
+
+fn is_weak_ssl_context_get_instance_call(c: MethodAccessExpression) -> bool {
+    return isWeakSslContextGetInstanceCall(c)
+}
+
+fn is_crypto_algorithm_misuse_call(c: MethodAccessExpression) -> bool {
+    return isCryptoAlgorithmMisuseCall(c)
+}
+
+// -------------------------
+// Findings
+// -------------------------
+fn cwe327_crypto_findings(
+    ruleId: string,
+    sinkFile: string,
+    line: int
+) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (is_crypto_algorithm_misuse_call(c)) {
+            let (loc = c.getLocation()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-327" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(cwe327_crypto_findings())
+}

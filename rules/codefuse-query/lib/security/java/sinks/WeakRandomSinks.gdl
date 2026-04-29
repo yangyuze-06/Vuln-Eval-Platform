@@ -1,0 +1,22 @@
+// CWE-330 insufficient randomness source modeling.
+use coref::java::*
+
+pub fn isWeakRandomNew(n: NewExpression) -> bool {
+    let (t = n.getPrintableText()) {
+        return
+            t.contains("new java.util.Random(") ||
+            t.contains("new Random(")
+    }
+}
+
+pub fn isMathRandomCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains("java.lang.Math.random(") ||
+            t.contains("Math.random(")
+    }
+}
+
+pub fn isWeakRandomCall(c: MethodAccessExpression) -> bool {
+    return isMathRandomCall(c)
+}

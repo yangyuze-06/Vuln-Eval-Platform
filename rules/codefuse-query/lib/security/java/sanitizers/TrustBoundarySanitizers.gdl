@@ -1,0 +1,27 @@
+// CWE-501 sanitizer/barrier and local scope-exclusion helpers.
+use coref::java::*
+
+pub fn isNonCwe501SessionCacheWrite(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains(".setAttribute(") &&
+            t.contains("cookie") &&
+            t.contains("remember")
+    }
+}
+
+pub fn isTrustBoundarySanitizerCall(c: MethodAccessExpression) -> bool {
+    return isNonCwe501SessionCacheWrite(c)
+}
+
+pub fn isTrustBoundarySanitizerExpr(e: Expression) -> bool {
+    return false
+}
+
+pub fn isTrustBoundaryBarrierCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isTrustBoundaryBarrierExpr(e: Expression) -> bool {
+    return false
+}

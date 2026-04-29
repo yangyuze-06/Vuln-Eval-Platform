@@ -1,0 +1,18 @@
+// CWE-643 sanitizer/barrier placeholders. No behavior is enabled in Phase 5G.
+use coref::java::*
+
+pub fn isXPathInjectionSanitizerCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isXPathInjectionSanitizerExpr(e: Expression) -> bool {
+    return false
+}
+
+pub fn isXPathInjectionBarrierCall(c: MethodAccessExpression) -> bool {
+    return false
+}
+
+pub fn isXPathInjectionBarrierExpr(e: Expression) -> bool {
+    return false
+}

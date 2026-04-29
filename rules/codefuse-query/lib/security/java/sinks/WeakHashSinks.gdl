@@ -1,0 +1,81 @@
+// CWE-328 weak hash algorithm modeling.
+use coref::java::*
+
+fn weak_hash_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+pub fn isMessageDigestGetInstanceCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains("MessageDigest.getInstance(")
+    }
+}
+
+pub fn isWeakHashAlgorithmExpr(e: Expression) -> bool {
+    let (t = e.getPrintableText()) {
+        return
+            t.contains("\"MD2\"") ||
+            t.contains("\"MD5\"") ||
+            t.contains("\"SHA1\"") ||
+            t.contains("\"SHA-1\"") ||
+            t.contains("\"SHA512\"")
+    }
+}
+
+fn isWeakHashLocalValue(v: Variable) -> bool {
+    for (lv in LocalVariable(weak_hash_java_db())) {
+        if (v.key_eq(lv)) {
+            if (isWeakHashAlgorithmExpr(lv.getExpression())) {
+                return true
+            }
+        }
+    }
+
+    for (ae in AssignmentExpression(weak_hash_java_db())) {
+        for (dstRef in ReferenceExpression(weak_hash_java_db())) {
+            if (dstRef.key_eq(ae.getDestination())) {
+                if (v.key_eq(dstRef.getDefinition())) {
+                    if (isWeakHashAlgorithmExpr(ae.getSource())) {
+                        return true
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn callFirstArgIsWeakHash(c: MethodAccessExpression) -> bool {
+    if (isWeakHashAlgorithmExpr(c.getArgument(0))) {
+        return true
+    }
+
+    for (argRef in ReferenceExpression(weak_hash_java_db())) {
+        if (argRef.key_eq(c.getArgument(0))) {
+            for (v in Variable(weak_hash_java_db())) {
+                if (v.key_eq(argRef.getDefinition()) && isWeakHashLocalValue(v)) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn isWeakMessageDigestGetInstanceCall(c: MethodAccessExpression) -> bool {
+    return isMessageDigestGetInstanceCall(c) && callFirstArgIsWeakHash(c)
+}
+
+pub fn isCommonsCodecWeakDigestCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return
+            t.contains("DigestUtils.md5(") ||
+            t.contains("DigestUtils.md5Hex(") ||
+            t.contains("DigestUtils.sha1(") ||
+            t.contains("DigestUtils.sha1Hex(")
+    }
+}
+
+pub fn isWeakHashMisuseCall(c: MethodAccessExpression) -> bool {
+    return
+        isWeakMessageDigestGetInstanceCall(c) ||
+        isCommonsCodecWeakDigestCall(c)
+}

@@ -1,0 +1,57 @@
+// script
+use coref::java::*
+use security::java::sinks::CookieSecuritySinks::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// -------------------------
+// Cookie security API modeling
+// -------------------------
+fn is_add_cookie_call(c: MethodAccessExpression) -> bool {
+    return isAddCookieCall(c)
+}
+
+fn is_cookie_set_secure_true_call(c: MethodAccessExpression) -> bool {
+    return isCookieSetSecureTrueCall(c)
+}
+
+fn is_cookie_set_secure_false_call(c: MethodAccessExpression) -> bool {
+    return isCookieSetSecureFalseCall(c)
+}
+
+fn is_insecure_cookie_add_call(c: MethodAccessExpression) -> bool {
+    return isInsecureCookieAddCall(c)
+}
+
+// -------------------------
+// Findings
+// -------------------------
+fn cwe614_cookie_findings(
+    ruleId: string,
+    sinkFile: string,
+    line: int
+) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (is_insecure_cookie_add_call(c)) {
+            let (loc = c.getLocation()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-614" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(cwe614_cookie_findings())
+}

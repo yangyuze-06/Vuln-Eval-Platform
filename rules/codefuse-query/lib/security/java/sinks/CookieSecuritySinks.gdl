@@ -1,0 +1,115 @@
+// CWE-614 sensitive cookie without Secure flag modeling.
+use coref::java::*
+
+fn cookie_security_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+pub fn isCookieNewExpr(e: Expression) -> bool {
+    let (t = e.getPrintableText()) {
+        return
+            t.contains("new javax.servlet.http.Cookie(") ||
+            t.contains("new Cookie(")
+    }
+}
+
+pub fn isAddCookieCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".addCookie(")
+    }
+}
+
+pub fn isCookieSetSecureTrueCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".setSecure(true)")
+    }
+}
+
+pub fn isCookieSetSecureFalseCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".setSecure(false)")
+    }
+}
+
+fn cookieVar(v: Variable) -> bool {
+    for (lv in LocalVariable(cookie_security_java_db())) {
+        if (v.key_eq(lv) && isCookieNewExpr(lv.getExpression())) {
+            return true
+        }
+    }
+
+    for (ae in AssignmentExpression(cookie_security_java_db())) {
+        if (isCookieNewExpr(ae.getSource())) {
+            for (dstRef in ReferenceExpression(cookie_security_java_db())) {
+                if (dstRef.key_eq(ae.getDestination()) && v.key_eq(dstRef.getDefinition())) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+fn callFirstArgVar(c: MethodAccessExpression, v: Variable) -> bool {
+    for (argRef in ReferenceExpression(cookie_security_java_db())) {
+        if (argRef.key_eq(c.getArgument(0)) && v.key_eq(argRef.getDefinition())) {
+            return true
+        }
+    }
+}
+
+fn callReceiverVar(c: MethodAccessExpression, v: Variable) -> bool {
+    for (recv in ReferenceExpression(cookie_security_java_db())) {
+        if (recv.key_eq(c.getCallSite()) && v.key_eq(recv.getDefinition())) {
+            return true
+        }
+    }
+}
+
+fn cookieVarHasSecureTrue(v: Variable, owner: Callable) -> bool {
+    for (c in MethodAccessExpression(cookie_security_java_db())) {
+        if (
+            c.getEnclosingCallable().key_eq(owner) &&
+            isCookieSetSecureTrueCall(c) &&
+            callReceiverVar(c, v)
+        ) {
+            return true
+        }
+    }
+}
+
+fn cookieVarHasSecureFalse(v: Variable, owner: Callable) -> bool {
+    for (c in MethodAccessExpression(cookie_security_java_db())) {
+        if (
+            c.getEnclosingCallable().key_eq(owner) &&
+            isCookieSetSecureFalseCall(c) &&
+            callReceiverVar(c, v)
+        ) {
+            return true
+        }
+    }
+}
+
+pub fn isInsecureCookieAddCall(c: MethodAccessExpression) -> bool {
+    if (!isAddCookieCall(c)) {
+        return false
+    }
+
+    if (isCookieNewExpr(c.getArgument(0))) {
+        return true
+    }
+
+    for (v in Variable(cookie_security_java_db())) {
+        let (owner = c.getEnclosingCallable()) {
+            if (
+                cookieVar(v) &&
+                callFirstArgVar(c, v) &&
+                (
+                    cookieVarHasSecureFalse(v, owner) ||
+                    !cookieVarHasSecureTrue(v, owner)
+                )
+            ) {
+                return true
+            }
+        }
+    }
+}

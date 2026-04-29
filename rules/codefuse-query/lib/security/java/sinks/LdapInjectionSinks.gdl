@@ -1,0 +1,60 @@
+// CWE-090 LDAP injection sink modeling.
+use coref::java::*
+
+fn ldap_sink_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+pub fn isLdapSearchCall(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        return t.contains(".search(") && hasLdapContextEvidence(c)
+    }
+}
+
+fn hasLdapContextEvidence(c: MethodAccessExpression) -> bool {
+    let (t = c.getPrintableText()) {
+        if (
+            t.contains("DirContext") ||
+            t.contains("InitialDirContext") ||
+            t.contains("LdapContext") ||
+            t.contains("InitialLdapContext") ||
+            t.contains("javax.naming") ||
+            t.contains("LDAP") ||
+            t.contains("ldap")
+        ) {
+            return true
+        }
+    }
+
+    for (s in Statement(ldap_sink_java_db())) {
+        if (s.getEnclosingCallable().key_eq(c.getEnclosingCallable())) {
+            let (st = s.getPrintableText()) {
+                if (
+                    st.contains("DirContext") ||
+                    st.contains("InitialDirContext") ||
+                    st.contains("LdapContext") ||
+                    st.contains("InitialLdapContext") ||
+                    st.contains("javax.naming") ||
+                    st.contains("SearchControls") ||
+                    st.contains("NamingEnumeration") ||
+                    st.contains("LDAP") ||
+                    st.contains("ldap")
+                ) {
+                    return true
+                }
+            }
+        }
+    }
+}
+
+pub fn isLdapSinkCall(c: MethodAccessExpression) -> bool {
+    return isLdapSearchCall(c)
+}
+
+pub fn isLdapSinkExpr(e: Expression) -> bool {
+    for (c in MethodAccessExpression(ldap_sink_java_db())) {
+        if (e.key_eq(c) && isLdapSinkCall(c)) {
+            return true
+        }
+    }
+}

@@ -1,0 +1,103 @@
+// script
+use coref::java::*
+use security::java::JavaServletSources::*
+use security::java::TaintHelpers::*
+use security::java::TaintTracking::*
+use security::java::sanitizers::LdapInjectionSanitizers::*
+use security::java::sinks::LdapInjectionSinks::*
+
+fn default_java_db() -> JavaDB {
+    return JavaDB::load("coref_java_src.db")
+}
+
+// -------------------------
+// Source modeling
+// -------------------------
+fn is_cwe090_source_expr(e: Expression) -> bool {
+    return isServletTaintSourceExpr(e)
+}
+
+fn is_cwe090_source_stmt(s: Statement) -> bool {
+    return isServletTaintSourceStmt(s)
+}
+
+fn is_cwe090_source_call(c: MethodAccessExpression) -> bool {
+    return isServletTaintSourceCall(c)
+}
+
+// -------------------------
+// Sink modeling
+// -------------------------
+fn is_ldap_search_call(c: MethodAccessExpression) -> bool {
+    return isLdapSearchCall(c)
+}
+
+fn is_ldap_sink_call(c: MethodAccessExpression) -> bool {
+    return isLdapSinkCall(c)
+}
+
+fn is_ldap_sink_expr(e: Expression) -> bool {
+    return isLdapSinkExpr(e)
+}
+
+// -------------------------
+// Sanitizer/barrier modeling
+// -------------------------
+fn is_ldap_sanitizer_call(c: MethodAccessExpression) -> bool {
+    return isLdapInjectionSanitizerCall(c)
+}
+
+fn is_ldap_sanitizer_expr(e: Expression) -> bool {
+    return isLdapInjectionSanitizerExpr(e)
+}
+
+fn is_ldap_barrier_call(c: MethodAccessExpression) -> bool {
+    return isLdapInjectionBarrierCall(c)
+}
+
+fn is_ldap_barrier_expr(e: Expression) -> bool {
+    return isLdapInjectionBarrierExpr(e)
+}
+
+// -------------------------
+// Helpers
+// -------------------------
+fn call_has_tainted_argument(c: MethodAccessExpression) -> bool {
+    return callHasTaintedArgument(c)
+}
+
+// -------------------------
+// Findings
+// -------------------------
+fn cwe090_ldap_findings(
+    ruleId: string,
+    sinkFile: string,
+    line: int
+) -> bool {
+    for (c in MethodAccessExpression(default_java_db())) {
+        if (is_ldap_sink_call(c)) {
+            let (loc = c.getLocation()) {
+                let (f = loc.getFile().getRelativePath()) {
+                    let (l = loc.getStartLineNumber()) {
+                        if (
+                            ruleId = "CWE-090" &&
+                            sinkFile = f &&
+                            line = l
+                        ) {
+                            if (
+                                call_has_tainted_argument(c) &&
+                                !is_ldap_sanitizer_call(c)
+                            ) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    output(cwe090_ldap_findings())
+}
