@@ -1,186 +1,301 @@
-# Vuln-Eval-Lab 🔐
-### Static Analysis Evaluation Lab & Java SAST Checker Rule Pack
+# Vuln-Eval-Platform 🔐
+### Security Evaluation Lab for Static Analysis Tools
+
 
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-active-success)
-![Python](https://img.shields.io/badge/python-3.8+-blue)
-![JDK](https://img.shields.io/badge/JDK-17+-orange)
 ![OWASP](https://img.shields.io/badge/OWASP-Benchmark-important)
-![CodeQL](https://img.shields.io/badge/CodeQL-supported-red)
-![CodeFuse--Query](https://img.shields.io/badge/CodeFuse--Query-supported-blueviolet)
-![GodelScript](https://img.shields.io/badge/GodelScript-rule%20pack-purple)
-![Java SAST](https://img.shields.io/badge/Java-SAST-orange)
-![Security Research](https://img.shields.io/badge/security-research-blue)
 ![Created by L1ngSh1](https://img.shields.io/badge/Created%20by-L1ngSh1-purple)
 
 ---
 
 ## 📌 项目简介
 
-**Vuln-Eval-Lab** 最初用于统一评测 **CodeQL**、**CodeFuse-Query** 等静态分析工具在 **OWASP Benchmark** 上的表现，提供结果标准化、ground truth 对比和指标统计能力。
+**Vuln-EVAL-LAB** 是一个面向安全研究的静态分析评测框架，
+用于统一评估不同漏洞检测工具在 **OWASP Benchmark 数据集** 上的检测能力。
 
-在评测过程中，项目进一步发展出一套基于 **CodeFuse-Query / GodelScript** 的模块化 **Java SAST checker rule pack**。因此项目现在包含两条主线：
+本项目支持：
 
-1. 多工具静态分析评测 pipeline
-2. GodelScript Java security checker rule pack
+- CodeQL 静态分析工具评测
+- CodeFuse-Query 静态分析工具评测
+- 多 CWE 漏洞检测对比
+- 自动化评测指标统计
+- 可复现实验流程设计
 
-本项目面向安全研究、规则开发和可复现实验，不改变早期多工具评测平台的定位。
+该框架旨在解决不同安全工具之间缺乏统一评测标准的问题，
+提供工程化、可扩展的漏洞检测评测平台。
 
----
-
-## ✅ 当前状态
-
-- 已完成 11 个 CWE checker
-- 当前 11 个 checker 在 OWASP Benchmark 上 Recall 均为 1.0000
-- 已形成 source / helper / taint / sink / sanitizer 模块化框架
-- 已支持 `eval_checker.sh <CWE>` 单 CWE 可复现评测
-- CodeQL / SARIF 评测能力作为多工具评测 pipeline 保留
-- 当前阶段重点进入 regression、packaging、precision research
+⚠ 本项目主要用于安全研究与工具评测实验。
 
 ---
 
-## 🧪 已完成 Checker
+## 🆕 版本说明
 
-| CWE | 名称 | 类型 | Precision | Recall | F1 |
-| --- | --- | --- | ---: | ---: | ---: |
-| CWE-022 | 路径遍历 | Taint-based | 0.5519 | 1.0000 | 0.7112 |
-| CWE-078 | 命令注入 | Taint-based | 0.5650 | 1.0000 | 0.7221 |
-| CWE-079 | XSS | Taint-based | 0.7193 | 1.0000 | 0.8367 |
-| CWE-089 | SQL 注入 | Injection | 0.6445 | 1.0000 | 0.7839 |
-| CWE-090 | LDAP 注入 | Injection | 0.5510 | 1.0000 | 0.7105 |
-| CWE-643 | XPath 注入 | Injection | 0.4545 | 1.0000 | 0.6250 |
-| CWE-327 | 危险加密算法 | API misuse | 0.8280 | 1.0000 | 0.9059 |
-| CWE-328 | 弱哈希算法 | API misuse | 0.9922 | 1.0000 | 0.9961 |
-| CWE-330 | 随机数不足 | API misuse | 1.0000 | 1.0000 | 1.0000 |
-| CWE-614 | Cookie Secure Flag 缺失 | Web config | 1.0000 | 1.0000 | 1.0000 |
-| CWE-501 | 信任边界违规 | Object-state | 0.7094 | 1.0000 | 0.8300 |
+### v2.0（当前版本）
 
-完整 TP / FP / FN 见 [docs/results.md](docs/results.md)。
+- 完成 11 个 CodeFuse-Query / GodelScript Java SAST checker。
+- 建立 `source / helper / taint / sink / sanitizer` 模块化规则框架。
+- 新增统一评测入口：`scripts/evaluation/eval_checker.sh <CWE>`。
+- 当前 11 个 checker 在 OWASP Benchmark 上均达到 `Recall = 1.0000`。
+- 项目进入 regression、packaging 与 precision research 阶段。
 
----
+### v1.1
 
-## 🧩 架构概览
+- 完善早期自动化评测流程。
+- 新增 `run_eval.sh`、结果转换、指标汇总与基础报告生成。
 
-```text
-OWASP Benchmark
-   ↓
-CodeFuse database / CodeQL database
-   ↓
-Rules
-   ├── CodeFuse-Query / GodelScript checkers
-   └── CodeQL queries
-   ↓
-Result normalization
-   ├── CodeFuse JSON → CSV
-   └── CodeQL SARIF → CSV
-   ↓
-Ground truth comparison
-   ↓
-Metrics / TP / FP / FN
-```
+### v1.0
 
-Godel rule pack 内部结构：
-
-```text
-JavaServletSources.gdl
-   ↓
-TaintHelpers.gdl
-   ↓
-TaintTracking.gdl
-   ↓
-CWE-specific sinks/*.gdl
-   ↓
-CWE-specific sanitizers/*.gdl
-   ↓
-checkerXXX.gdl
-```
-
-- taint-based checker 复用 `TaintTracking`
-- API misuse checker 不强行使用 taint
-- `checkerXXX.gdl` 保持 thin checker 风格
-
-更多架构说明见 [docs/architecture.md](docs/architecture.md)。
+- 接入 OWASP Benchmark。
+- 完成静态分析工具评测平台的基础架构。
+- 支持 CodeQL / CodeFuse 结果归一化与单 CWE 评测。
 
 ---
 
-## ⚡ 快速开始
+## 🧩 系统架构
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
-运行单个 CodeFuse-Query / GodelScript checker：
+OWASP Benchmark Source Code
+│
+▼
+Static Analysis Database
+│
+▼
+Detection Rules Execution
+(CodeQL / CodeFuse Query)
+│
+▼
+Detection Result Export
+(CodeQL SARIF / CodeFuse JSON)
+│
+▼
+Result Normalization
+(SARIF → CSV / JSON → CSV)
+│
+▼
+Ground Truth Comparison
+│
+▼
+Evaluation Metrics Output
 
-```bash
-./scripts/evaluation/eval_checker.sh 089
 ```
 
-运行统一评测入口：
+---
 
-```bash
-./run_eval.sh
-```
+## 🎯 项目目标
 
-CodeQL / CodeFuse 实验命令、结果转换和报告生成流程见 [docs/evaluation_workflow.md](docs/evaluation_workflow.md)。新增 checker 的流程见 [docs/how_to_add_checker.md](docs/how_to_add_checker.md)。
+- 构建统一漏洞检测评测框架  
+- 对比不同静态分析工具检测能力  
+- 提供自动化评测流程  
+- 支持安全研究实验复现  
+- 提供可扩展规则管理体系  
 
 ---
 
 ## 📂 项目结构
 
-```text
+```
+
 Vuln-Eval-Lab
-├── dataset/                  # OWASP Benchmark 与分析数据库
-├── rules/
-│   ├── codefuse-query/       # GodelScript Java checker rule pack
-│   └── codeql-query/         # CodeQL queries
-├── experiments/              # 各 CWE 实验结果与评测输出
-├── scripts/
-│   ├── converters/           # JSON / SARIF 到 CSV 转换
-│   ├── evaluation/           # 指标评测与 runner
-│   └── reporting/            # 汇总与报告
-├── docs/                     # 架构、运行、结果与扩展文档
-├── reports/                  # 汇总报告与图表
-├── run_eval.sh
+│
+├── dataset                    # 数据集与分析数据库
+│   ├── benchmark              # OWASP Benchmark 源码
+│   │   ├── data
+│   │   ├── src
+│   │   └── target
+│   ├── codeql-db              # CodeQL 数据库与结果
+│   │      
+│   └── codefuse-db            # CodeFuse 数据库目录
+│
+├── rules                      # 检测规则
+│   ├── codeql-query           # CodeQL 各 CWE 规则
+│   └── codefuse-query         # CodeFuse 各 CWE 规则
+│
+├── experiments                # 实验目录
+│   ├── cwe-022 ~ cwe-643      # 各 CWE 实验
+│   │   ├── eval
+│   │   ├── logs
+│   │   └── results
+│   └── examples               # 示例实验
+│
+├── scripts                    # 脚本目录（按功能分类）
+│   ├── converters             # 结果格式转换
+│   ├── evaluation             # 指标评测与计算
+│   └── reporting              # 图表与报告生成
+├── reports                    # 结果输出
+│   ├── data
+│   └── figs
+│
+├── run_eval.sh                # 一键评估入口
 ├── requirements.txt
-└── expectedresults-1.2.csv
+├── expectedresults-1.2.csv    # 基准期望结果
+├── LICENSE
+└── README.md
+
+```
+
+更多实验流程说明请参考：
+
+```
+
+experiments/README.md
+
+````
+
+
+
+## 🔧 安装 CodeQL
+
+参考官方文档：
+
+[https://github.com/github/codeql](https://github.com/github/codeql)
+
+---
+
+## 🔧 安装 CodeFuse / Sparrow
+
+[https://github.com/codefuse-ai/CodeFuse-Query](https://github.com/codefuse-ai/CodeFuse-Query)
+
+---
+
+# ⚡ Quick Start
+
+```bash
+git clone https://github.com/yangyuze-06/Vuln-Eval-Lab.git
+cd Vuln-Eval-Lab
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+pip install -r requirements.txt
+
+cd experiments
+bash create.sh
 ```
 
 ---
 
-## 🎯 适用场景
+## ⚡ 一键评估（v1.1 推荐）
 
-- 评测 CodeQL、CodeFuse-Query 等静态分析工具在 OWASP Benchmark 上的表现
-- 开发和回归验证 Java SAST checker
-- 研究 checker precision / recall trade-off
-- 构建可复现的安全规则实验流程
+在完成检测并生成 SARIF 文件后：
 
----
+```bash
+./run_eval.sh
+```
 
-## 📚 文档
+该命令将自动：
 
-- [架构说明](docs/architecture.md)
-- [评测结果](docs/results.md)
-- [实验与评测流程](docs/evaluation_workflow.md)
-- [运行 CodeFuse-Query checker](docs/run_codefuse_queries.md)
-- [新增 checker 指南](docs/how_to_add_checker.md)
-- [路线图](docs/roadmap.md)
+* 检测 SARIF 文件是否齐全
+* 汇总各 CWE 指标
+* 生成性能可视化图
+* 输出英文评估报告
+* 输出中文评估报告
 
----
+结果输出位置：
 
-## 🤝 贡献指南
-
-欢迎提交 Issue 或 Pull Request 参与项目改进。适合贡献的方向包括新增 CWE checker、优化现有 checker precision、完善评测脚本和补充实验文档。
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+```
+reports/data/metrics.json
+reports/figs/
+reports/report.md
+reports/report_zh.md
+```
 
 ---
 
-## 👨‍💻 Author
+# 🧪 实验流程
 
-Created by **L1ngSh1**.
+每个 CWE 实验统一遵循以下流程：
+
+1. 构建静态分析数据库
+2. 执行漏洞检测规则
+3. 导出检测结果（CodeQL: SARIF，CodeFuse: JSON）
+4. 结果归一化为 CSV
+5. Ground Truth 对比
+6. 统计评测指标
+
+---
+
+# 📊 评测指标
+
+本项目采用标准漏洞检测评测指标体系：
+
+| 指标        | 含义       |
+| --------- | -------- |
+| TP        | 真实检测漏洞数量 |
+| FP        | 误报数量     |
+| FN        | 漏报数量     |
+| Precision | 检测准确率    |
+| Recall    | 漏洞召回率    |
+| FNR       | 漏报率      |
+| FPR       | 误报率      |
+| FDR       | 误检率      |
+
+---
+
+
+# 📌 当前支持 CWE 类型
+
+* CWE-022
+* CWE-078
+* CWE-079
+* CWE-089
+* CWE-090
+* CWE-327
+* CWE-328
+* CWE-330
+* CWE-501
+* CWE-614
+* CWE-643
+
+---
+
+# 📈 项目特点
+
+* 工程化漏洞评测框架
+* 支持多工具统一评测
+* 支持自动指标统计
+* 支持实验复现
+* 支持规则模块化管理
+* 支持一键自动评估 pipeline（v1.1）
+* 支持自动生成中英双语报告
+* 支持性能可视化分析
+
+---
+
+# 🚧 未来规划
+
+* 支持更多静态分析工具
+* 增加评测可视化模块
+* 支持自动实验执行流水线
+* 支持 ROC / PR 曲线分析
+* 构建漏洞检测规则基准库
+
+---
+
+# 📄 许可证
+
+本项目基于 MIT 开源许可证发布
+您可以在遵守许可证条款的前提下自由使用、修改和分发本项目
+完整许可证内容请参见 [LICENSE](LICENSE) 文件
+
+---
+
+## 👨‍💻 作者：
+
+L1ngSh1
+
+---
+
+## ✍️ 作者的碎碎念
+
+本项目最初源于作者在安全研究实习期间，对不同静态分析工具评测方式缺乏统一标准的思考。
+
+Vuln-Eval-Platform 的目标是构建一个结构化、可扩展、可复现的漏洞检测评测框架，使研究者能够更加系统地分析静态分析工具在真实漏洞数据集上的检测表现。
+
+该项目既是一个研究实验平台，也记录了作者在安全研究与工程实践中的探索过程。
+
+项目目前仍在持续演进中，欢迎对静态分析与漏洞检测感兴趣的研究者参与改进、提出建议或贡献规则。
+
+如果本项目能够在安全研究或教学中提供帮助，将是作者非常欣慰的事情。
+
+---
