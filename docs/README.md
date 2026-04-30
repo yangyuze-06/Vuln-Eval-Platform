@@ -33,6 +33,7 @@
 - `architecture.md`：当前规则框架架构。
 - `results.md`：已完成 checker 的评测结果。
 - `roadmap.md`：后续稳定化、封装和精度研究路线。
+- `evaluation_workflow.md`：CodeQL、CodeFuse-Query 实验命令与结果评测流程。
 - `how_to_add_checker.md`：新增 checker 的模板和约束。
 - `run_codefuse_queries.md`：本地运行 CodeFuse-Query 规则的方法。
 - `refactor_plan.md`：早期模块化重构计划归档。
