@@ -146,9 +146,9 @@ experiments/README.md
 
 ## 🔧 安装 CodeQL
 
-参考官方文档：
+参考官方发布地址：
 
-[https://github.com/github/codeql](https://github.com/github/codeql)
+[https://github.com/github/codeql-cli-binaries/releases](https://github.com/github/codeql-cli-binaries/releases)
 
 ---
 
