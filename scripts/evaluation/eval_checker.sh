@@ -28,14 +28,37 @@ if [ -f ".venv/bin/activate" ]; then
 fi
 
 RULE_FILE="rules/codefuse-query/CWE-${CWE_ID}/checker${CWE_ID}.gdl"
-DB_DIR="dataset/codefuse-db"
+DB_DIR="${DB_DIR:-dataset/codefuse-db}"
 RESULT_DIR="experiments/cwe-${CWE_ID}/results/codefuse-query"
 EVAL_DIR="experiments/cwe-${CWE_ID}/eval/codefuse_eval"
 JSON_FILE="${RESULT_DIR}/checker${CWE_ID}.json"
 CSV_FILE="${RESULT_DIR}/cwe${CWE_ID}_codefuse.csv"
 
-GODEL_BIN="${GODEL_BIN:-/home/ubuntu64/tools/static-analysis-tools/codefuse/sparrow-cli-2.1.0.linux/sparrow-cli/godel-script/usr/bin/godel}"
-OFFICIAL_LIB="${OFFICIAL_LIB:-/home/ubuntu64/tools/static-analysis-tools/codefuse/sparrow-cli-2.1.0.linux/sparrow-cli/lib}"
+if [ -z "${CODEFUSE_HOME:-}" ] && command -v sparrow >/dev/null 2>&1; then
+    SPARROW_BIN="$(command -v sparrow)"
+    # Resolve symlink cross-platform using Python to find the true installation directory
+    SPARROW_REALPATH=$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "${SPARROW_BIN}")
+    CODEFUSE_HOME="$( cd "$( dirname "${SPARROW_REALPATH}" )" && pwd )"
+fi
+
+if [ -z "${CODEFUSE_HOME:-}" ]; then
+    for candidate in \
+        "${HOME}/Workspace/Tools/static-analysis-tools/codefuse/sparrow-cli" \
+        "${HOME}/tools/static-analysis-tools/codefuse/sparrow-cli" \
+        "/opt/codefuse/sparrow-cli"
+    do
+        if [ -x "${candidate}/godel-script/usr/bin/godel" ] && [ -d "${candidate}/lib" ]; then
+            CODEFUSE_HOME="${candidate}"
+            echo "⚠️  警告: 自动回退并从默认硬编码路径找到了 CodeFuse: ${CODEFUSE_HOME}"
+            echo "   推荐将其可执行文件添加到 PATH 或设置 CODEFUSE_HOME 环境变量以便跨环境运行。"
+            break
+        fi
+    done
+fi
+
+CODEFUSE_HOME="${CODEFUSE_HOME:-}"
+GODEL_BIN="${GODEL_BIN:-${CODEFUSE_HOME}/godel-script/usr/bin/godel}"
+OFFICIAL_LIB="${OFFICIAL_LIB:-${CODEFUSE_HOME}/lib}"
 LOCAL_LIB="${LOCAL_LIB:-${PROJECT_ROOT}/rules/codefuse-query/lib}"
 
 echo "============================================"
@@ -50,11 +73,15 @@ mkdir -p "${RESULT_DIR}"
 
 if [ ! -x "${GODEL_BIN}" ]; then
     echo "❌ 错误: 找不到 godel 可执行文件: ${GODEL_BIN}"
+    echo "  请确认 CODEFUSE_HOME 指向 sparrow-cli 目录，例如："
+    echo "  export CODEFUSE_HOME=\"\$HOME/Workspace/Tools/static-analysis-tools/codefuse/sparrow-cli\""
     exit 1
 fi
 
 if [ ! -d "${OFFICIAL_LIB}" ]; then
     echo "❌ 错误: 找不到官方 CodeFuse-Query lib: ${OFFICIAL_LIB}"
+    echo "  请确认 CODEFUSE_HOME 指向 sparrow-cli 目录，例如："
+    echo "  export CODEFUSE_HOME=\"\$HOME/Workspace/Tools/static-analysis-tools/codefuse/sparrow-cli\""
     exit 1
 fi
 

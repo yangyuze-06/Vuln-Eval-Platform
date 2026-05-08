@@ -1,6 +1,7 @@
 # Vuln-Eval-Platform 🔐
 ### Security Evaluation Lab for Static Analysis Tools
 
+[👉 点击这里查看中文版本 (Chinese Version)](docs/README_zh-CN.md)
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![OWASP](https://img.shields.io/badge/OWASP-Benchmark-important)
@@ -8,53 +9,52 @@
 
 ---
 
-## 📌 项目简介
+## 📌 Project Introduction
 
-**Vuln-EVAL-LAB** 是一个面向安全研究的静态分析评测框架，
-用于统一评估不同漏洞检测工具在 **OWASP Benchmark 数据集** 上的检测能力。
+**Vuln-EVAL-LAB** is a static analysis evaluation framework oriented towards security research.
+It is used to uniformly evaluate the detection capabilities of different vulnerability detection tools on the **OWASP Benchmark dataset**.
 
-本项目支持：
+This project supports:
 
-- CodeQL 静态分析工具评测
-- CodeFuse-Query 静态分析工具评测
-- 多 CWE 漏洞检测对比
-- 自动化评测指标统计
-- 可复现实验流程设计
+- Evaluation of the CodeQL static analysis tool
+- Evaluation of the CodeFuse-Query static analysis tool
+- Comparison of multi-CWE vulnerability detection
+- Automated statistical analysis of evaluation metrics
+- Reproducible experimental process design
 
-该框架旨在解决不同安全工具之间缺乏统一评测标准的问题，
-提供工程化、可扩展的漏洞检测评测平台。
+This framework aims to solve the problem of lacking a unified evaluation standard among different security tools,
+providing an engineered, scalable platform for vulnerability detection evaluation.
 
-⚠ 本项目主要用于安全研究与工具评测实验。
+⚠ This project is primarily used for security research and tool evaluation experiments.
 
 ---
 
-## 🆕 版本说明
+## 🆕 Release Notes
 
-### v2.0（当前版本）
+### v2.0 (Current Version)
 
-- 完成 11 个 CodeFuse-Query / GodelScript Java SAST checker。
-- 建立 `source / helper / taint / sink / sanitizer` 模块化规则框架。
-- 新增统一评测入口：`scripts/evaluation/eval_checker.sh <CWE>`。
-- 当前 11 个 checker 在 OWASP Benchmark 上均达到 `Recall = 1.0000`。
-- 项目进入 regression、packaging 与 precision research 阶段。
+- Completed 11 CodeFuse-Query / GodelScript Java SAST checkers.
+- Established a modular rule framework for `source / helper / taint / sink / sanitizer`.
+- Added unified evaluation entry point: `scripts/evaluation/eval_checker.sh <CWE>`.
+- The current 11 checkers have all achieved `Recall = 1.0000` on the OWASP Benchmark.
+- The project has entered the regression, packaging, and precision research stages.
 
 ### v1.1
 
-- 完善早期自动化评测流程。
-- 新增 `run_eval.sh`、结果转换、指标汇总与基础报告生成。
+- Refined the early automated evaluation process.
+- Added `run_eval.sh`, result conversion, metrics aggregation, and basic report generation.
 
 ### v1.0
 
-- 接入 OWASP Benchmark。
-- 完成静态分析工具评测平台的基础架构。
-- 支持 CodeQL / CodeFuse 结果归一化与单 CWE 评测。
+- Integrated the OWASP Benchmark.
+- Completed the basic architecture of the static analysis tool evaluation platform.
+- Supported CodeQL / CodeFuse result normalization and single-CWE evaluation.
 
 ---
 
-## 🧩 系统架构
+## 🧩 System Architecture
 
 ```
-
 OWASP Benchmark Source Code
 │
 ▼
@@ -77,82 +77,77 @@ Ground Truth Comparison
 │
 ▼
 Evaluation Metrics Output
-
 ```
 
 ---
 
-## 🎯 项目目标
+## 🎯 Project Goals
 
-- 构建统一漏洞检测评测框架  
-- 对比不同静态分析工具检测能力  
-- 提供自动化评测流程  
-- 支持安全研究实验复现  
-- 提供可扩展规则管理体系  
+- Build a unified vulnerability detection evaluation framework
+- Compare the detection capabilities of different static analysis tools
+- Provide automated evaluation workflows
+- Support the reproduction of security research experiments
+- Provide an extensible rule management system
 
 ---
 
-## 📂 项目结构
+## 📂 Project Structure
 
 ```
-
 Vuln-Eval-Lab
 │
-├── dataset                    # 数据集与分析数据库
-│   ├── benchmark              # OWASP Benchmark 源码
+├── dataset                    # Datasets and Analysis Databases
+│   ├── benchmark              # OWASP Benchmark source code
 │   │   ├── data
 │   │   ├── src
 │   │   └── target
-│   ├── codeql-db              # CodeQL 数据库与结果
+│   ├── codeql-db              # CodeQL databases and results
 │   │      
-│   └── codefuse-db            # CodeFuse 数据库目录
+│   └── codefuse-db            # CodeFuse database directory
 │
-├── rules                      # 检测规则
-│   ├── codeql-query           # CodeQL 各 CWE 规则
-│   └── codefuse-query         # CodeFuse 各 CWE 规则
+├── rules                      # Detection Rules
+│   ├── codeql-query           # CodeQL rules for each CWE
+│   └── codefuse-query         # CodeFuse rules for each CWE
 │
-├── experiments                # 实验目录
-│   ├── cwe-022 ~ cwe-643      # 各 CWE 实验
+├── experiments                # Experiment Directory
+│   ├── cwe-022 ~ cwe-643      # Experiments for each CWE
 │   │   ├── eval
 │   │   ├── logs
 │   │   └── results
-│   └── examples               # 示例实验
+│   └── examples               # Example experiments
 │
-├── scripts                    # 脚本目录（按功能分类）
-│   ├── converters             # 结果格式转换
-│   ├── evaluation             # 指标评测与计算
-│   └── reporting              # 图表与报告生成
-├── reports                    # 结果输出
+├── scripts                    # Scripts Directory (grouped by function)
+│   ├── converters             # Result format conversion
+│   ├── evaluation             # Metric evaluation and calculation
+│   └── reporting              # Chart and report generation
+├── reports                    # Output Results
 │   ├── data
 │   └── figs
 │
-├── run_eval.sh                # 一键评估入口
+├── run_eval.sh                # One-click evaluation entry point
 ├── requirements.txt
-├── expectedresults-1.2.csv    # 基准期望结果
+├── expectedresults-1.2.csv    # Benchmark expected results
 ├── LICENSE
 └── README.md
-
 ```
 
-更多实验流程说明请参考：
+For more details on the experimental process, please refer to:
 
 ```
-
 experiments/README.md
+```
 
-````
+---
 
+## 🔧 Install CodeQL
 
-
-## 🔧 安装 CodeQL
-
-参考官方发布地址：
+Refer to the official release page:
 
 [https://github.com/github/codeql-cli-binaries/releases](https://github.com/github/codeql-cli-binaries/releases)
 
 ---
 
-## 🔧 安装 CodeFuse / Sparrow
+## 🔧 Install CodeFuse / Sparrow
 
 [https://github.com/codefuse-ai/CodeFuse-Query](https://github.com/codefuse-ai/CodeFuse-Query)
 
@@ -175,23 +170,23 @@ bash create.sh
 
 ---
 
-## ⚡ 一键评估（v1.1 推荐）
+## ⚡ One-Click Evaluation (Recommended in v1.1)
 
-在完成检测并生成 SARIF 文件后：
+After completing the detection and generating SARIF files:
 
 ```bash
 ./run_eval.sh
 ```
 
-该命令将自动：
+This command will automatically:
 
-* 检测 SARIF 文件是否齐全
-* 汇总各 CWE 指标
-* 生成性能可视化图
-* 输出英文评估报告
-* 输出中文评估报告
+* Check if SARIF files are complete
+* Aggregate metrics for each CWE
+* Generate performance visualization charts
+* Output English evaluation report
+* Output Chinese evaluation report
 
-结果输出位置：
+Result output locations:
 
 ```
 reports/data/metrics.json
@@ -202,38 +197,37 @@ reports/report_zh.md
 
 ---
 
-# 🧪 实验流程
+# 🧪 Experimental Workflow
 
-每个 CWE 实验统一遵循以下流程：
+Each CWE experiment uniformly follows these steps:
 
-1. 构建静态分析数据库
-2. 执行漏洞检测规则
-3. 导出检测结果（CodeQL: SARIF，CodeFuse: JSON）
-4. 结果归一化为 CSV
-5. Ground Truth 对比
-6. 统计评测指标
+1. Build static analysis database
+2. Execute vulnerability detection rules
+3. Export detection results (CodeQL: SARIF, CodeFuse: JSON)
+4. Normalize results to CSV
+5. Ground Truth comparison
+6. Calculate evaluation metrics
 
 ---
 
-# 📊 评测指标
+# 📊 Evaluation Metrics
 
-本项目采用标准漏洞检测评测指标体系：
+This project uses a standard vulnerability detection evaluation metric system:
 
-| 指标        | 含义       |
+| Metric    | Meaning |
 | --------- | -------- |
-| TP        | 真实检测漏洞数量 |
-| FP        | 误报数量     |
-| FN        | 漏报数量     |
-| Precision | 检测准确率    |
-| Recall    | 漏洞召回率    |
-| FNR       | 漏报率      |
-| FPR       | 误报率      |
-| FDR       | 误检率      |
+| TP        | True Positive (detected vulnerabilities) |
+| FP        | False Positive (false alarms) |
+| FN        | False Negative (missed vulnerabilities) |
+| Precision | Detection Precision |
+| Recall    | Vulnerability Recall |
+| FNR       | False Negative Rate |
+| FPR       | False Positive Rate |
+| FDR       | False Discovery Rate |
 
 ---
 
-
-# 📌 当前支持 CWE 类型
+# 📌 Currently Supported CWE Types
 
 * CWE-022
 * CWE-078
@@ -249,53 +243,51 @@ reports/report_zh.md
 
 ---
 
-# 📈 项目特点
+# 📈 Project Features
 
-* 工程化漏洞评测框架
-* 支持多工具统一评测
-* 支持自动指标统计
-* 支持实验复现
-* 支持规则模块化管理
-* 支持一键自动评估 pipeline（v1.1）
-* 支持自动生成中英双语报告
-* 支持性能可视化分析
-
----
-
-# 🚧 未来规划
-
-* 支持更多静态分析工具
-* 增加评测可视化模块
-* 支持自动实验执行流水线
-* 支持 ROC / PR 曲线分析
-* 构建漏洞检测规则基准库
+* Engineered vulnerability evaluation framework
+* Supports unified evaluation of multiple tools
+* Supports automatic metric calculation
+* Supports experimental reproduction
+* Supports modular rule management
+* Supports one-click automatic evaluation pipeline (v1.1)
+* Supports automatic generation of bilingual reports (English/Chinese)
+* Supports performance visualization analysis
 
 ---
 
-# 📄 许可证
+# 🚧 Future Plans
 
-本项目基于 MIT 开源许可证发布
-您可以在遵守许可证条款的前提下自由使用、修改和分发本项目
-完整许可证内容请参见 [LICENSE](LICENSE) 文件
+* Support more static analysis tools
+* Add evaluation visualization modules
+* Support automated experiment execution pipelines
+* Support ROC / PR curve analysis
+* Build a vulnerability detection rule benchmark library
 
 ---
 
-## 👨‍💻 作者：
+# 📄 License
+
+This project is released under the MIT Open Source License.
+You are free to use, modify, and distribute this project under the terms of the license.
+Please see the [LICENSE](LICENSE) file for complete license contents.
+
+---
+
+## 👨‍💻 Author
 
 L1ngSh1
 
 ---
 
-## ✍️ 作者的碎碎念
+## ✍️ Author's Notes
 
-本项目最初源于作者在安全研究实习期间，对不同静态分析工具评测方式缺乏统一标准的思考。
+This project originally stemmed from the author's thoughts during a security research internship regarding the lack of standardized evaluation methods for different static analysis tools.
 
-Vuln-Eval-Platform 的目标是构建一个结构化、可扩展、可复现的漏洞检测评测框架，使研究者能够更加系统地分析静态分析工具在真实漏洞数据集上的检测表现。
+The goal of Vuln-Eval-Platform is to build a structured, extensible, and reproducible vulnerability detection evaluation framework, allowing researchers to more systematically analyze the detection performance of static analysis tools on real vulnerability datasets.
 
-该项目既是一个研究实验平台，也记录了作者在安全研究与工程实践中的探索过程。
+This project is both a platform for research experiments and a record of the author's exploration in security research and engineering practices.
 
-项目目前仍在持续演进中，欢迎对静态分析与漏洞检测感兴趣的研究者参与改进、提出建议或贡献规则。
+The project is still continuously evolving. Researchers interested in static analysis and vulnerability detection are welcome to participate in improving it, proposing suggestions, or contributing rules.
 
-如果本项目能够在安全研究或教学中提供帮助，将是作者非常欣慰的事情。
-
----
+It would be a great comfort to the author if this project could be helpful in security research or teaching.
