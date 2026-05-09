@@ -11,7 +11,7 @@
 
 ## 📌 Project Introduction
 
-**Vuln-EVAL-LAB** is a static analysis evaluation framework oriented towards security research.
+**Vuln-Eval-Platform** is a static analysis evaluation framework oriented towards security research.
 It is used to uniformly evaluate the detection capabilities of different vulnerability detection tools on the **OWASP Benchmark dataset**.
 
 This project supports:
@@ -156,16 +156,19 @@ Refer to the official release page:
 # ⚡ Quick Start
 
 ```bash
-git clone https://github.com/yangyuze-06/Vuln-Eval-Lab.git
-cd Vuln-Eval-Lab
+git clone https://github.com/yangyuze-06/Vuln-Eval-Platform.git
+cd Vuln-Eval-Platform
 
 python3 -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
 
-cd experiments
-bash create.sh
+# Evaluate a specific CWE (e.g., CWE-022)
+bash scripts/evaluation/eval_checker.sh cwe-022
+
+# Or run the one-click evaluation for all results
+./run_eval.sh
 ```
 
 ---

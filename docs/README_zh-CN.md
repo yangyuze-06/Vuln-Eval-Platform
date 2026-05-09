@@ -11,7 +11,7 @@
 
 ## 📌 项目简介
 
-**Vuln-EVAL-LAB** 是一个面向安全研究的静态分析评测框架，
+**Vuln-Eval-Platform** 是一个面向安全研究的静态分析评测框架，
 用于统一评估不同漏洞检测工具在 **OWASP Benchmark 数据集** 上的检测能力。
 
 本项目支持：
@@ -156,16 +156,19 @@ experiments/README.md
 # ⚡ Quick Start
 
 ```bash
-git clone https://github.com/yangyuze-06/Vuln-Eval-Lab.git
-cd Vuln-Eval-Lab
+git clone https://github.com/yangyuze-06/Vuln-Eval-Platform.git
+cd Vuln-Eval-Platform
 
 python3 -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
 
-cd experiments
-bash create.sh
+# 运行单个 CWE 的评测 (例如 CWE-022)
+bash scripts/evaluation/eval_checker.sh cwe-022
+
+# 或运行一键评估，汇总所有结果
+./run_eval.sh
 ```
 
 ---
