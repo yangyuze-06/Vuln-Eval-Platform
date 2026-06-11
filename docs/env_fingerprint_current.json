@@ -1,0 +1,40 @@
+{
+  "platform": {
+    "system": "Darwin",
+    "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "processor": "arm",
+    "python_version": "3.14.5"
+  },
+  "filesystem": {
+    "case_sensitivity": "case-insensitive",
+    "cwd": "/Users/y4n9/Workspace/Projects/My-github-projects/Vuln-Eval-Platform",
+    "cwd_realpath": "/Users/y4n9/Workspace/Projects/My-github-projects/Vuln-Eval-Platform"
+  },
+  "locale": {
+    "LANG": "zh_CN.UTF-8",
+    "LC_ALL": "unset"
+  },
+  "tools": {
+    "java_version": "openjdk version \"17.0.19\" 2026-04-21",
+    "mvn_version": "Apache Maven 3.9.15 (98b2cdbfdb5f1ac8781f537ea9acccaed7922349)",
+    "python_path": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "codeql_version": "CodeQL command-line toolchain release 2.25.3.\nCopyright (C) 2019-2026 GitHub, Inc.\nUnpacked in: /Users/y4n9/Workspace/Tools/static-analysis-tools/codeql\n   Analysis results depend critically on separately distributed query and\n   extractor modules. To list modules that are visible to the toolchain,\n   use 'codeql resolve packs' and 'codeql resolve languages'.",
+    "godel_version": "unavailable"
+  },
+  "git": {
+    "commit": "be4ea7ea3dde8443caafafcd016c6846f993311f",
+    "branch": "main",
+    "status": "?? scripts/diagnostics/",
+    "dirty": true
+  },
+  "checksums": {
+    "expectedresults": "94d19209baf53a369de4e9d9f097f747fb5f4b34d65c3b53e92115bf2858a865",
+    "cwe_manifest": "c3f867e70963f4350d6edf6b8df0e9dabeb7b4effab93e1ffb72e907e13f50ce",
+    "eval_findings_py": "723e5f168d6cf95dc45242b6a88fec4dd074b9c60496daca92a5e0942ad0c71e",
+    "evaluator_py": "missing",
+    "findings_py": "missing",
+    "ground_truth_py": "missing",
+    "metrics_py": "missing"
+  }
+}
