@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""VEP Unified Evaluation CLI - Phase 2 Entry Point.
+"""VEP Unified Evaluation CLI - Phase 2B Entry Point.
 
 Evaluate normalized findings CSV against OWASP Benchmark ground truth.
-This is the v2 evaluation path, independent of existing eval_checker.sh.
+Phase 2B: Enhanced with detailed outputs and FP mode support.
 
 Usage:
     python scripts/evaluation/eval_findings.py \\
@@ -10,9 +10,10 @@ Usage:
         --ground-truth expectedresults-1.2.csv \\
         --tool codefuse \\
         --cwe CWE-022 \\
-        --out experiments/cwe-022/eval/codefuse_eval_v2/metrics.json
+        --out experiments/cwe-022/eval/codefuse_eval_v2/metrics.json \\
+        --fp-mode all_non_gt
 
-Phase 2: Unified Evaluation Core
+Phase 2B: Unified Evaluation Core with detail outputs
 Does NOT replace existing evaluation scripts.
 """
 
@@ -26,8 +27,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from vep.evaluation.findings import load_findings_csv
 from vep.evaluation.ground_truth import load_expected_cases
-from vep.evaluation.evaluator import evaluate_findings
-from vep.evaluation.metrics import write_metrics_json
+from vep.evaluation.evaluator import evaluate_findings_with_details
+from vep.evaluation.metrics import write_metrics_json, write_evaluation_details
 from vep.core.normalization import normalize_cwe_id
 
 
@@ -60,6 +61,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--out",
         required=True,
         help="Output metrics.json path"
+    )
+    parser.add_argument(
+        "--fp-mode",
+        choices=["all_non_gt", "in_scope"],
+        default="all_non_gt",
+        help="FP calculation mode (default: all_non_gt)"
+    )
+    parser.add_argument(
+        "--details-dir",
+        help="Directory for detail CSVs (default: same as --out parent dir)"
+    )
+    parser.add_argument(
+        "--no-details",
+        action="store_true",
+        help="Do not output detail CSVs (tp.csv, fp.csv, fn.csv, outside_scope.csv)"
     )
     parser.add_argument(
         "--manifest",
@@ -113,6 +129,12 @@ def main() -> int:
     out_path = Path(args.out).resolve()
     manifest_path = Path(args.manifest).resolve() if args.manifest else None
 
+    # Determine details directory
+    if args.details_dir:
+        details_dir = Path(args.details_dir).resolve()
+    else:
+        details_dir = out_path.parent
+
     # Normalize CWE
     cwe_normalized = normalize_cwe_id(args.cwe)
 
@@ -121,7 +143,10 @@ def main() -> int:
         print(f"Ground truth: {ground_truth_path}")
         print(f"Tool: {args.tool}")
         print(f"CWE: {cwe_normalized}")
+        print(f"FP mode: {args.fp_mode}")
         print(f"Output: {out_path}")
+        if not args.no_details:
+            print(f"Details dir: {details_dir}")
 
     # Validate CWE in manifest (optional)
     if manifest_path:
@@ -145,17 +170,23 @@ def main() -> int:
 
         if args.verbose:
             print("\n[3/4] Evaluating...")
-        result = evaluate_findings(
+        result, details = evaluate_findings_with_details(
             findings=findings,
             expected_cases=expected_cases,
             tool=args.tool,
             cwe=cwe_normalized,
-            include_tn=not args.no_tn
+            include_tn=not args.no_tn,
+            fp_mode=args.fp_mode
         )
 
         if args.verbose:
-            print("\n[4/4] Writing metrics...")
+            print("\n[4/4] Writing outputs...")
         write_metrics_json(result, out_path)
+
+        if not args.no_details:
+            write_evaluation_details(details, details_dir)
+            if args.verbose:
+                print(f"  Written detail CSVs to: {details_dir}")
 
     except FileNotFoundError as e:
         print(f"❌ Error: {e}", file=sys.stderr)
@@ -173,11 +204,18 @@ def main() -> int:
     print("=" * 60)
     print(f"Tool: {result.tool}")
     print(f"CWE: {result.cwe}")
-    print(f"Total findings: {result.total_findings}")
+    print(f"FP mode: {result.fp_mode}")
+    print(f"Raw findings: {result.total_findings}")
+    print(f"Dedup findings: {result.dedup_findings}")
+    print(f"In-scope findings: {result.in_scope_findings}")
+    print(f"Outside-scope findings: {result.outside_scope_findings}")
+    print(f"Outside-scope ratio: {result.outside_scope_ratio:.4f}")
     print(f"Ground truth vulnerable: {result.total_expected_vulnerable}")
     print("")
     print(f"TP: {result.tp}")
     print(f"FP: {result.fp}")
+    print(f"FP (in-scope): {result.fp_in_scope}")
+    print(f"FP (all non-GT): {result.fp_all_non_gt}")
     print(f"FN: {result.fn}")
     if result.tn is not None:
         print(f"TN: {result.tn}")
@@ -185,8 +223,13 @@ def main() -> int:
     print(f"Precision: {result.precision:.4f}")
     print(f"Recall: {result.recall:.4f}")
     print(f"F1: {result.f1:.4f}")
+    print(f"FNR: {result.fnr:.4f}")
+    print(f"FPR: {result.fpr:.4f}")
+    print(f"FDR: {result.fdr:.4f}")
     print("=" * 60)
     print(f"✅ Metrics written to: {out_path}")
+    if not args.no_details:
+        print(f"✅ Details written to: {details_dir}/")
     print("")
 
     return 0

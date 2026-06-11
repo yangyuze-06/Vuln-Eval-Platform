@@ -64,9 +64,19 @@ class EvalResult:
         precision: TP / (TP + FP)
         recall: TP / (TP + FN)
         f1: F1 score
+        fnr: False negative rate (FN / (TP + FN))
+        fpr: False positive rate (FP / (FP + TN))
+        fdr: False discovery rate (FP / (TP + FP))
         total_findings: Total number of findings (before deduplication)
+        dedup_findings: Unique testcases detected
         total_expected_vulnerable: Total vulnerable cases in ground truth
         total_expected_cases: Total cases in ground truth (optional)
+        in_scope_findings: Findings within CWE scope
+        outside_scope_findings: Findings outside CWE scope
+        outside_scope_ratio: Ratio of outside-scope findings
+        fp_in_scope: False positives (in-scope only)
+        fp_all_non_gt: False positives (all non-ground-truth)
+        fp_mode: FP calculation mode ("all_non_gt" or "in_scope")
         schema_version: Schema version identifier
     """
     tool: str
@@ -78,7 +88,33 @@ class EvalResult:
     precision: float
     recall: float
     f1: float
+    fnr: float
+    fpr: float
+    fdr: float
     total_findings: int
+    dedup_findings: int
     total_expected_vulnerable: int
-    total_expected_cases: Optional[int] = None
+    total_expected_cases: Optional[int]
+    in_scope_findings: int
+    outside_scope_findings: int
+    outside_scope_ratio: float
+    fp_in_scope: int
+    fp_all_non_gt: int
+    fp_mode: str = "all_non_gt"
     schema_version: str = "vep.eval.v2"
+
+
+@dataclass
+class EvaluationDetails:
+    """Detailed evaluation results for CSV output.
+
+    Attributes:
+        tp_rows: True positive details
+        fp_rows: False positive details
+        fn_rows: False negative details
+        outside_scope_rows: Outside-scope finding details
+    """
+    tp_rows: list
+    fp_rows: list
+    fn_rows: list
+    outside_scope_rows: list
