@@ -1,0 +1,36 @@
+{
+  "platform": {
+    "system": "Linux",
+    "platform": "Linux-6.17.0-23-generic-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "python_version": "3.12.3"
+  },
+  "filesystem": {
+    "case_sensitivity": "case-sensitive",
+    "cwd": "/home/ubuntu64/workspace/My-GitHub-Project/Vuln-Eval-Platform",
+    "cwd_realpath": "/home/ubuntu64/workspace/My-GitHub-Project/Vuln-Eval-Platform"
+  },
+  "locale": {
+    "LANG": "zh_CN.UTF-8",
+    "LC_ALL": "C.UTF-8"
+  },
+  "tools": {
+    "java_version": "openjdk version \"21.0.10\" 2026-01-20",
+    "mvn_version": "Apache Maven 3.8.7",
+    "python_path": "/home/ubuntu64/workspace/My-GitHub-Project/Vuln-Eval-Platform/.venv/bin/python",
+    "codeql_version": "CodeQL command-line toolchain release 2.23.9",
+    "godel_version": "GodelScript 1.1.20240702"
+  },
+  "git": {
+    "commit": "4660061c42fec09e7a12d831d2f726983b6ee35a",
+    "branch": "main",
+    "status_before_test": "?? .codex",
+    "dirty_before_test": true
+  },
+  "checksums": {
+    "expectedresults": "94d19209baf53a369de4e9d9f097f747fb5f4b34d65c3b53e92115bf2858a865",
+    "cwe_manifest": "c3f867e70963f4350d6edf6b8df0e9dabeb7b4effab93e1ffb72e907e13f50ce",
+    "eval_findings_py": "723e5f168d6cf95dc45242b6a88fec4dd074b9c60496daca92a5e0942ad0c71e"
+  }
+}
