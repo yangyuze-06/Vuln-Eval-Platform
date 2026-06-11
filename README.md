@@ -164,11 +164,28 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 
-# Evaluate a specific CWE (e.g., CWE-022)
-bash scripts/evaluation/eval_checker.sh cwe-022
-
-# Or run the one-click evaluation for all results
+# ---- CodeQL Evaluation ----
+# 1. Build CodeQL database (requires codeql CLI)
+# 2. Run CodeQL queries manually to generate SARIF files
+# 3. Aggregate results:
 ./run_eval.sh
+
+# ---- CodeFuse-Query Evaluation ----
+# Prerequisites: install sparrow CLI and set CODEFUSE_HOME
+# export CODEFUSE_HOME="$HOME/Workspace/Tools/static-analysis-tools/codefuse/sparrow-cli"
+
+# Evaluate a specific CWE (e.g., CWE-022)
+bash scripts/evaluation/eval_checker.sh 022
+
+# Or loop over all 11 CWEs:
+for cwe in 022 078 079 089 090 327 328 330 501 614 643; do
+  bash scripts/evaluation/eval_checker.sh $cwe
+done
+
+# Then aggregate all results:
+python scripts/evaluation/aggregate_results.py
+python scripts/reporting/plots_metrics.py
+python scripts/reporting/generate_report.py
 ```
 
 ---

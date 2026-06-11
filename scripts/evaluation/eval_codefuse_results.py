@@ -368,6 +368,9 @@ def evaluate(
     dedup_findings = len(detected_cases)
     precision = tp / (tp + fp) if (tp + fp) else 0.0
     recall = tp / (tp + fn) if (tp + fn) else 0.0
+    fnr = fn / len(positives) if positives else 0.0
+    fpr = fp / len(negatives) if negatives else 0.0
+    fdr = fp / (tp + fp) if (tp + fp) else 0.0
     f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) else 0.0
     outside_scope_ratio = len(outside_scope_cases) / dedup_findings if dedup_findings else 0.0
 
@@ -390,6 +393,9 @@ def evaluate(
         "fn": fn,
         "precision": round_metric(precision),
         "recall": round_metric(recall),
+        "fnr": round_metric(fnr),
+        "fpr": round_metric(fpr),
+        "fdr": round_metric(fdr),
         "f1": round_metric(f1),
     }
 
@@ -450,6 +456,9 @@ def print_summary(metrics: Dict[str, object]) -> None:
     print(f"FN: {metrics['fn']}")
     print(f"Precision: {metrics['precision']:.4f}")
     print(f"Recall: {metrics['recall']:.4f}")
+    print(f"FNR: {metrics['fnr']:.4f}")
+    print(f"FPR: {metrics['fpr']:.4f}")
+    print(f"FDR: {metrics['fdr']:.4f}")
     print(f"F1: {metrics['f1']:.4f}")
 
 
