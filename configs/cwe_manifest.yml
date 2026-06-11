@@ -1,0 +1,219 @@
+# VEP CWE Manifest
+# 用途：统一索引和管理 VEP 中所有 CWE 的规则、测试、实验路径
+# 状态：Phase 1 - 只读索引，不改变现有行为
+# 维护：新增 CWE 时只需在此文件添加一个条目
+
+version: "1.0"
+updated: "2026-06-11"
+
+# Ground Truth 配置
+ground_truth:
+  file: expectedresults-1.2.csv
+  format: owasp_benchmark_1.2
+
+# 数据库路径
+databases:
+  codefuse: dataset/codefuse-db
+  codeql: dataset/codeql-db
+
+# CWE 列表
+cwes:
+  - id: "022"
+    name: "CWE-022"
+    slug: "cwe-022"
+    slug_compact: "cwe022"
+    description: "Path Traversal"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-022/checker022.gdl
+      analysis_file: rules/codefuse-query/CWE-022/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-022
+    tests:
+      directory: tests/codefuse-query/java/cwe022
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-022
+
+  - id: "078"
+    name: "CWE-078"
+    slug: "cwe-078"
+    slug_compact: "cwe078"
+    description: "OS Command Injection"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-078/checker078.gdl
+      analysis_file: rules/codefuse-query/CWE-078/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-078
+    tests:
+      directory: tests/codefuse-query/java/cwe078
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-078
+
+  - id: "079"
+    name: "CWE-079"
+    slug: "cwe-079"
+    slug_compact: "cwe079"
+    description: "Cross-Site Scripting (XSS)"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-079/checker079.gdl
+      analysis_file: rules/codefuse-query/CWE-079/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-079
+    tests:
+      directory: tests/codefuse-query/java/cwe079
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-079
+
+  - id: "089"
+    name: "CWE-089"
+    slug: "cwe-089"
+    slug_compact: "cwe089"
+    description: "SQL Injection"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-089/checker089.gdl
+      analysis_file: rules/codefuse-query/CWE-089/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-089
+    tests:
+      directory: tests/codefuse-query/java/cwe089
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-089
+
+  - id: "090"
+    name: "CWE-090"
+    slug: "cwe-090"
+    slug_compact: "cwe090"
+    description: "LDAP Injection"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-090/checker090.gdl
+      analysis_file: rules/codefuse-query/CWE-090/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-090
+    tests:
+      directory: tests/codefuse-query/java/cwe090
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-090
+
+  - id: "327"
+    name: "CWE-327"
+    slug: "cwe-327"
+    slug_compact: "cwe327"
+    description: "Use of Broken or Risky Cryptographic Algorithm"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-327/checker327.gdl
+      analysis_file: rules/codefuse-query/CWE-327/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-327
+    tests:
+      directory: tests/codefuse-query/java/cwe327
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-327
+
+  - id: "328"
+    name: "CWE-328"
+    slug: "cwe-328"
+    slug_compact: "cwe328"
+    description: "Reversible One-Way Hash"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-328/checker328.gdl
+      analysis_file: rules/codefuse-query/CWE-328/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-328_328S
+      notes:
+        - "CodeQL 使用 CWE-328_328S 目录名（包含 CWE-328S 变体）"
+    tests:
+      directory: tests/codefuse-query/java/cwe328
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-328
+
+  - id: "330"
+    name: "CWE-330"
+    slug: "cwe-330"
+    slug_compact: "cwe330"
+    description: "Use of Insufficiently Random Values"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-330/checker330.gdl
+      analysis_file: rules/codefuse-query/CWE-330/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-330
+    tests:
+      directory: tests/codefuse-query/java/cwe330
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-330
+
+  - id: "501"
+    name: "CWE-501"
+    slug: "cwe-501"
+    slug_compact: "cwe501"
+    description: "Trust Boundary Violation"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-501/checker501.gdl
+      analysis_file: rules/codefuse-query/CWE-501/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-501
+    tests:
+      directory: tests/codefuse-query/java/cwe501
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-501
+
+  - id: "614"
+    name: "CWE-614"
+    slug: "cwe-614"
+    slug_compact: "cwe614"
+    description: "Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-614/checker614.gdl
+      analysis_file: rules/codefuse-query/CWE-614/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-614
+    tests:
+      directory: tests/codefuse-query/java/cwe614
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-614
+
+  - id: "643"
+    name: "CWE-643"
+    slug: "cwe-643"
+    slug_compact: "cwe643"
+    description: "XPath Injection"
+    codefuse:
+      rule_file: rules/codefuse-query/CWE-643/checker643.gdl
+      analysis_file: rules/codefuse-query/CWE-643/analysis.md
+    codeql:
+      rule_directory: rules/codeql-query/CWE-643
+    tests:
+      directory: tests/codefuse-query/java/cwe643
+      positive_pattern: "*Positive.java"
+      negative_pattern: "*Negative.java"
+    experiments:
+      directory: experiments/cwe-643
+
+# 共享库配置
+libraries:
+  codefuse:
+    local: rules/codefuse-query/lib
+    modules:
+      - security/java/JavaServletSources.gdl
+      - security/java/TaintHelpers.gdl
+      - security/java/TaintTracking.gdl
+      - security/java/sanitizers/
+      - security/java/sinks/
