@@ -1,0 +1,90 @@
+{
+  "schema_version": "vep.aggregate.v2",
+  "tool": "codefuse",
+  "fp_mode": "all_non_gt",
+  "generated_at": "2026-06-11T10:56:15.778435Z",
+  "included_count": 2,
+  "cwes": {
+    "CWE-022": {
+      "cwe": "CWE-022",
+      "tool": "codefuse",
+      "fp_mode": "all_non_gt",
+      "raw_findings": 228,
+      "total_findings": 228,
+      "dedup_findings": 228,
+      "ground_truth_total": 133,
+      "total_expected_vulnerable": 133,
+      "in_scope_findings": 228,
+      "outside_scope_findings": 0,
+      "outside_scope_ratio": 0.0,
+      "tp": 120,
+      "fp": 108,
+      "fp_in_scope": 108,
+      "fp_all_non_gt": 108,
+      "fn": 13,
+      "precision": 0.5263,
+      "recall": 0.9023,
+      "fnr": 0.0977,
+      "fpr": 0.8,
+      "fdr": 0.4737,
+      "f1": 0.6648,
+      "schema_version": "vep.eval.v2",
+      "tn": 27,
+      "cwe_scope_total": 268,
+      "total_expected_cases": 268
+    },
+    "CWE-089": {
+      "cwe": "CWE-089",
+      "tool": "codefuse",
+      "fp_mode": "all_non_gt",
+      "raw_findings": 417,
+      "total_findings": 417,
+      "dedup_findings": 417,
+      "ground_truth_total": 272,
+      "total_expected_vulnerable": 272,
+      "in_scope_findings": 417,
+      "outside_scope_findings": 0,
+      "outside_scope_ratio": 0.0,
+      "tp": 267,
+      "fp": 150,
+      "fp_in_scope": 150,
+      "fp_all_non_gt": 150,
+      "fn": 5,
+      "precision": 0.6403,
+      "recall": 0.9816,
+      "fnr": 0.0184,
+      "fpr": 0.6466,
+      "fdr": 0.3597,
+      "f1": 0.775,
+      "schema_version": "vep.eval.v2",
+      "tn": 82,
+      "cwe_scope_total": 504,
+      "total_expected_cases": 504
+    }
+  },
+  "overall": {
+    "tp": 387,
+    "fp": 258,
+    "fn": 18,
+    "precision": 0.6,
+    "recall": 0.9556,
+    "f1": 0.7371,
+    "fnr": 0.0444,
+    "fpr": 0.703,
+    "fdr": 0.4,
+    "tn": 109
+  },
+  "metadata": {
+    "fp_modes_seen": [
+      "all_non_gt"
+    ],
+    "tools_seen": [
+      "codefuse"
+    ],
+    "schema_versions_seen": [
+      "vep.eval.v2"
+    ]
+  },
+  "missing": [],
+  "skipped_count": 0
+}
