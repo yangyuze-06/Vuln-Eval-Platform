@@ -37,6 +37,18 @@ codeql database analyze owasp-benchmark-db \
 
 ## CodeFuse-Query / GodelScript 实验示例
 
+### macOS CodeFuse Java Environment Gate
+
+macOS 上构建 CodeFuse/Sparrow Java DB 前，先确认 `JAVA_HOME` 指向真实 JDK
+`Contents/Home`，而不是 Homebrew keg prefix。背景和修复步骤见
+[codefuse_macos_jdk_setup.md](codefuse_macos_jdk_setup.md)。
+
+```bash
+python3 scripts/check_codefuse_java_env.py --require-version 21 --require-modules
+```
+
+该 gate 必须 PASS 后再执行 `sparrow database create`。
+
 ### 推荐方式：统一 runner
 
 当前主线推荐使用 `eval_checker.sh` 运行单个 CWE。runner 会负责执行 GodelScript checker、生成 JSON、转换 CSV，并输出 TP / FP / FN / metrics。
@@ -62,6 +74,8 @@ experiments/cwe-<ID>/eval/codefuse_eval/fn.csv
 ### 手动构建数据库
 
 ```bash
+python3 scripts/check_codefuse_java_env.py --require-version 21 --require-modules
+
 sparrow database create \
   -s dataset/benchmark/src/main/java \
   -lang java \
