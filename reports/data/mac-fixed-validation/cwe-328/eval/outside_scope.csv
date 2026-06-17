@@ -1,0 +1,2 @@
+testcase,testcaseId,sinkFile,line,ruleId,findingCount
+BenchmarkTest00003,3,org/owasp/benchmark/testcode/BenchmarkTest00003.java,72,CWE-328,1

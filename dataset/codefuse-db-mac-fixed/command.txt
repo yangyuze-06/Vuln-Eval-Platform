@@ -1,0 +1,15 @@
+date: 2026-06-17T16:52:47Z
+pwd: /Users/y4n9/Workspace/Projects/My-github-projects/Vuln-Eval-Platform
+JAVA_HOME: /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+java -version:
+openjdk version "21.0.11" 2026-04-21
+OpenJDK Runtime Environment Homebrew (build 21.0.11)
+OpenJDK 64-Bit Server VM Homebrew (build 21.0.11, mixed mode, sharing)
+javac -version:
+javac 21.0.11
+sparrow version:
+2.1.0
+source path: dataset/benchmark/src/main/java
+output path: dataset/codefuse-db-mac-fixed
+command:
+JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" PATH="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home/bin:$PATH" sparrow database create -s dataset/benchmark/src/main/java -lang java -o dataset/codefuse-db-mac-fixed

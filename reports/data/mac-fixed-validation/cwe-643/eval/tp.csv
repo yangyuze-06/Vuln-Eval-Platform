@@ -1,0 +1,16 @@
+testcase,testcaseId,sinkFile,line,ruleId,findingCount
+BenchmarkTest00207,207,org/owasp/benchmark/testcode/BenchmarkTest00207.java,75,CWE-643,1
+BenchmarkTest00442,442,org/owasp/benchmark/testcode/BenchmarkTest00442.java,68,CWE-643,1
+BenchmarkTest00607,607,org/owasp/benchmark/testcode/BenchmarkTest00607.java,79,CWE-643,1
+BenchmarkTest01223,1223,org/owasp/benchmark/testcode/BenchmarkTest01223.java,72,CWE-643,1
+BenchmarkTest01224,1224,org/owasp/benchmark/testcode/BenchmarkTest01224.java,70,CWE-643,1
+BenchmarkTest01316,1316,org/owasp/benchmark/testcode/BenchmarkTest01316.java,63,CWE-643,1
+BenchmarkTest01478,1478,org/owasp/benchmark/testcode/BenchmarkTest01478.java,79,CWE-643,1
+BenchmarkTest01561,1561,org/owasp/benchmark/testcode/BenchmarkTest01561.java,67,CWE-643,1
+BenchmarkTest01734,1734,org/owasp/benchmark/testcode/BenchmarkTest01734.java,89,CWE-643,1
+BenchmarkTest01736,1736,org/owasp/benchmark/testcode/BenchmarkTest01736.java,87,CWE-643,1
+BenchmarkTest01892,1892,org/owasp/benchmark/testcode/BenchmarkTest01892.java,84,CWE-643,1
+BenchmarkTest01894,1894,org/owasp/benchmark/testcode/BenchmarkTest01894.java,82,CWE-643,1
+BenchmarkTest01974,1974,org/owasp/benchmark/testcode/BenchmarkTest01974.java,70,CWE-643,1
+BenchmarkTest02100,2100,org/owasp/benchmark/testcode/BenchmarkTest02100.java,72,CWE-643,1
+BenchmarkTest02189,2189,org/owasp/benchmark/testcode/BenchmarkTest02189.java,65,CWE-643,1
