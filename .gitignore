@@ -55,6 +55,16 @@ codeql-db/
 codefuse-db/
 dataset/codeql-db/
 dataset/codefuse-db/
+**/db/
+**/*-db/
+dataset/*-db/
+dataset/*-db-*/
+**/*_db/
+**/*_db_*/
+**/coref_java_src.db
+**/*.db
+**/*.sqlite
+**/*.sqlite3
 
 ############################
 # Experiment outputs
@@ -73,6 +83,10 @@ reports/data/metrics.json
 reports/figs/
 reports/report.md
 reports/report_zh.md
+reports/*discrepancy*.md
+reports/*missing-testcases*
+reports/*rootcause*.md
+reports/codefuse-db-*.md
 
 ############################
 # Others

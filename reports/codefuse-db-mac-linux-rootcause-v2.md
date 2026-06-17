@@ -13,7 +13,7 @@
 ## 1. Executive Summary
 
 - **`Confirmed`**: Mac 库与 Linux 库结构几乎一致（130 张表全同，仅 5 张行数不同），节点总数相等；差异本质是 **27871 个 method-access 表达式从 `*_with_type` 掉到 `*_without_type`**（接收者类型未绑定），而不是节点缺失。
-- **`Confirmed`**: 故障被精确定位到 **JDK 类型模型未加载**——`reference_type` 中 `java.*` 全限定名从 **842 → 38（−95%）**；而项目内部类型 `org.owasp.*` **891 = 891 完全一致**、第三方 jar 类型 `javax.*` 基本保留（32 → 25）。
+- **`Confirmed`**: DB 证据精确定位到 **`java.*` JDK 类型解析结果缺失**——`reference_type` 中 `java.*` 全限定名从 **842 → 38（−95%）**；而项目内部类型 `org.owasp.*` **891 = 891 完全一致**、第三方 jar 类型 `javax.*` 基本保留（32 → 25）。
 - **`Confirmed`**: 受影响的恰是污点类 CWE（022/078/079/089/501/643，共 67 FN）。其污点链上的 **中继类型**（`java.lang.String`/`StringBuilder` 1→0）与 **sink 类型**（`java.lang.Runtime`/`ProcessBuilder` 1→0）在 Mac 库里丢失；而 crypto/LDAP 的 sink 落在 `javax.*`（未丢），故 327/328/330/614/090 无漏报。
 - **`Likely`**: Mac 端建库时 **JDK 系统/启动类路径（java.base 等）没有进入 Sparrow 的类型解析路径**，而应用依赖 jar 进入了。最可能的触发点是 **JDK 发现失败**（本机 `/usr/libexec/java_home` 现在就报 "Unable to locate a Java Runtime"）。
 - **建议**: 正式评测 **只用 Linux 库**。Mac 库判为非权威、不可用于正式数据。已提供只读 CI gate（`scripts/diagnose_codefuse_db_diff.py`），当前对 Mac 库返回 **FAIL / exit 1**。
@@ -110,7 +110,7 @@ sparrow database create -s <src>/main/java -lang java -o <out>
 | javax.servlet.http.HttpServletRequest | **0** | **0** | source（**两端都为 0**，见 §9） |
 
 **`Confirmed`**:
-1. 退化是 **JDK 库加载失败**：`java.*` 掉 95%，而项目类（`org.owasp.*`）与第三方 jar 类（`javax.*`）基本完好。
+1. DB 层退化表现为 **JDK `java.*` 类型解析结果缺失**：`java.*` 掉 95%，而项目类（`org.owasp.*`）与第三方 jar 类（`javax.*`）基本完好。触发机制仍归入 §8 的 Likely/Possible。
 2. 故对照鲜明——`java.lang.Runtime/ProcessBuilder`（078 sink）与 `java.lang.String/StringBuilder`（万能中继）在 Mac 库消失；crypto/LDAP/XML sink 在 `javax.*` 保留。
 
 Linux 独有的 819 个 FQN 已落盘：`reports/data/linux_only_fqn.txt`（含 `java.io.*`、`java.lang.*`、`java.sql.*` 等大量 JDK 类）。
@@ -131,7 +131,7 @@ method_access_expression_without_type(element_hash_id,                        re
 - `type_hash_id` 关联 `reference_type.oid`（已验证：join 命中 17195 行）。
 
 **`Confirmed`** 对用户"type discovery vs method resolution"问题的回答：
-- 这是 **type discovery 失败（JDK `java.*` 类型模型整体未加载）**，进而 **传导为 method-access 的 receiver-type 绑定失败**（`with_type`→`without_type`）。
+- 这是 **type discovery 失败（DB 中 JDK `java.*` 类型解析结果大面积缺失）**，进而 **传导为 method-access 的 receiver-type 绑定失败**（`with_type`→`without_type`）。
 - **不是** 语法/方法名解析失败（method 引用仍在），**不是** 源码索引失败（见 §5 项目类完好）。
 
 样本（receiver type 取自 Linux `with_type`，即在 Mac 上被降级的那批调用）——BenchmarkTest00077（CWE-078）：
