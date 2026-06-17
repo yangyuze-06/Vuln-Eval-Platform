@@ -1,0 +1,21 @@
+java.lang.String	144
+byte[]	38
+java.lang.Process	25
+java.lang.Object	24
+java.lang.StringBuilder	22
+java.lang.String[]	18
+char[]	5
+java.lang.Runtime	4
+java.lang.ClassLoader	3
+org.w3c.dom.Document	1
+javax.xml.xpath.XPathFactory	1
+javax.xml.xpath.XPath	1
+javax.xml.parsers.DocumentBuilderFactory	1
+javax.xml.parsers.DocumentBuilder	1
+java.sql.ResultSet	1
+java.nio.file.Path	1
+java.lang.ProcessBuilder	1
+java.lang.Class<? extends org.owasp.benchmark.testcode.BenchmarkTest00498>	1
+java.lang.Class<? extends org.owasp.benchmark.testcode.BenchmarkTest00496>	1
+java.lang.Class<? extends org.owasp.benchmark.testcode.BenchmarkTest00207>	1
+java.io.InputStream	1
