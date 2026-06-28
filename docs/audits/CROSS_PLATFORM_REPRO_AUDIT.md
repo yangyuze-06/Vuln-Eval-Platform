@@ -56,7 +56,7 @@ experiments/
 
 ### 当前 macOS 环境指纹
 
-已采集当前 macOS 环境指纹（见 `docs/env_fingerprint_current.json`）：
+已采集当前 macOS 环境指纹（见 `docs/audits/env_fingerprint_current.json`）：
 
 - **操作系统**: Darwin (macOS-26.5.1-arm64)
 - **文件系统**: case-insensitive ⚠️
@@ -397,8 +397,8 @@ cat docs/repro_compare_CWE-<CWE>.md
 ## 参考资料
 
 - **诊断工具文档**: `scripts/diagnostics/README.md`
-- **当前环境指纹**: `docs/env_fingerprint_current.json`
-- **测试比较报告**: `docs/test_compare_cwe022_v2b_vs_v2.md`
+- **当前环境指纹**: `docs/audits/env_fingerprint_current.json`
+- **测试比较报告**: `docs/audits/test_compare_cwe022_v2b_vs_v2.md`
 - **Ground Truth**: `expectedresults-1.2.csv`
 - **CWE Manifest**: `configs/cwe_manifest.yml`
 

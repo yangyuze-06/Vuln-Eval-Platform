@@ -273,7 +273,7 @@ reports/report_zh.md
 
 本项目基于 MIT 开源许可证发布
 您可以在遵守许可证条款的前提下自由使用、修改和分发本项目
-完整许可证内容请参见 [LICENSE](LICENSE) 文件
+完整许可证内容请参见 [LICENSE](../LICENSE) 文件
 
 ---
 

@@ -119,7 +119,7 @@ rules/codefuse-query/CWE-022/analysis-and-backup/sinkfinder.gdl
 python scripts/converters/sarif_to_csv.py
 ```
 
-`sarif_to_csv.py` 当前使用脚本内固定输入输出路径，运行前需要按目标 CWE 修改脚本顶部路径常量。详细脚本说明见 [../scripts/README.md](../scripts/README.md)。
+`sarif_to_csv.py` 当前使用脚本内固定输入输出路径，运行前需要按目标 CWE 修改脚本顶部路径常量。详细脚本说明见 [../../scripts/README.md](../../scripts/README.md)。
 
 ### CodeFuse：JSON 转 CSV
 
@@ -169,7 +169,7 @@ reports/
 ./run_eval.sh
 ```
 
-脚本级终端 / VSCode 详细用法见 [../scripts/README.md](../scripts/README.md)。
+脚本级终端 / VSCode 详细用法见 [../../scripts/README.md](../../scripts/README.md)。
 
 ## 当前同步说明
 

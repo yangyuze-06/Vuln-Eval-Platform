@@ -48,7 +48,7 @@
 
 来源：`reports/data/env-fingerprint-linux-2026-06-11.json`、`mac-missing-testcases.json`、本轮 `uname/java -version//usr/libexec/java_home`。
 
-**建库命令**（`docs/evaluation_workflow.md`、`dataset/codefuse-db-linux/command.txt`）：
+**建库命令**（`docs/guides/evaluation_workflow.md`、`dataset/codefuse-db-linux/command.txt`）：
 ```
 sparrow database create -s <src>/main/java -lang java -o <out>
 ```

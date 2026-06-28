@@ -405,7 +405,7 @@ v2: experiments/cwe-022/eval/codefuse_eval_v2/
 1. **评估你的规则：** 使用 `eval_findings.py` 或 `eval_sarif_findings.py`
 2. **聚合多个 CWE：** 使用 `aggregate_v2.py`
 3. **对比新旧指标：** 确保 v2 与旧 evaluator 一致
-4. **阅读完整文档：** `docs/PHASE2_FINAL_SUMMARY.md`
+4. **阅读完整文档：** `docs/refactor/PHASE2_FINAL_SUMMARY.md`
 
 ---
 

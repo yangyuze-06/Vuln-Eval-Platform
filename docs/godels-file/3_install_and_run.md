@@ -8,7 +8,7 @@
 
 ## Sparrow 安装步骤和指导
 
-- CodeFuse-Query 下载包是一个 zip 存档，其中包含工具、脚本和各种特定于 CodeFuse-Query 的文件。如果您没有 CodeFuse-Query 许可证，那么下载此存档即表示您同意 [CodeFuse-Query 条款和条件](../LICENSE)。
+- CodeFuse-Query 下载包是一个 zip 存档，其中包含工具、脚本和各种特定于 CodeFuse-Query 的文件。如果您没有 CodeFuse-Query 许可证，那么下载此存档即表示您同意 [CodeFuse-Query 条款和条件](../../LICENSE)。
 - 目前仅支持 mac，linux 系统下使用 CodeFuse-Query，下载地址为:（目前仅给出示例，开源后给出正式下载地址）
    - mac: [CodeFuse-Query 2.0.0](https://github.com/codefuse-ai/CodeFuse-Query/releases/tag/2.0.0)
    - linux: [CodeFuse-Query 2.0.0](https://github.com/codefuse-ai/CodeFuse-Query/releases/tag/2.0.0)

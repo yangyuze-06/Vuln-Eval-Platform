@@ -193,7 +193,7 @@ jar 不在 classpath 上，这是与 JDK 模型不同的独立问题。
    这正是本可捕获该回归的检查。
    工程化防护已落到 `scripts/check_codefuse_java_env.py` 和
    `scripts/setup_macos_codefuse_jdk.sh`；macOS 建库流程见
-   `docs/codefuse_macos_jdk_setup.md`。
+   `docs/guides/codefuse_macos_jdk_setup.md`。
 3. 可选：使用修正后的 `JAVA_HOME` 重建**完整** Mac DB，并重新运行 `java.*`
    计数，在把正式评测从 Linux 切换走之前确认 Linux parity（约 842）。
 4. 在步骤 3 通过之前，**正式评测仍使用 Linux DB**。

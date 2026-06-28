@@ -14,7 +14,7 @@
 
 | 文件 | 类型 | 用途 |
 |---|---|---|
-| `docs/architecture_notes.md` | 文档 | VEP 架构分析与重构路线图 |
+| `docs/refactor/architecture_notes.md` | 文档 | VEP 架构分析与重构路线图 |
 | `configs/cwe_manifest.yml` | 配置 | CWE 统一注册表（11 个 CWE） |
 | `scripts/verify_manifest.py` | 脚本 | 只读验证工具（实际实现） |
 | `scripts/validate_manifest.py` | 脚本 | 只读验证工具（兼容入口） |
@@ -125,7 +125,7 @@ CodeQL 使用 `CWE-328_328S` 目录名（包含 CWE-328S 变体），CodeFuse �
 ### 查看架构文档
 
 ```bash
-cat docs/architecture_notes.md
+cat docs/refactor/architecture_notes.md
 ```
 
 ### 查看 CWE 配置

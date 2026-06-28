@@ -3,7 +3,7 @@
 Back to [README.md](../README.md#documents)
 
 GödelScript Syntax Spec,
-Usage Document see [GödelScript Program](./language-reference/program.md)。
+Usage Document see [GödelScript Program](./program.md)。
 
 ## Identifier / Literal / Annotation
 ```ebnf
@@ -40,7 +40,7 @@ fn get(a: Method) -> bool {
 
 ## Program
 
-About main program, [Click](./language-reference/program.md)。
+About main program, [Click](./program.md)。
 
 ```ebnf
 program = {use_stmt} {
@@ -58,7 +58,7 @@ program = {use_stmt} {
 
 ### Function
 
-Function Usage [Documents](./language-reference/functions.md)。
+Function Usage [Documents](./functions.md)。
 
 ```ebnf
 function_decl =
@@ -73,7 +73,7 @@ block_stmt = {statement};
 
 ### Enum
 
-Enum Usage [Documents](./language-reference/enums.md)。
+Enum Usage [Documents](./enums.md)。
 
 ```ebnf
 enum_decl = "enum" identifier "{" [identifier {"," identifier}] "}";
@@ -81,7 +81,7 @@ enum_decl = "enum" identifier "{" [identifier {"," identifier}] "}";
 
 ### Schema
 
-Schema Usage [Documents](./language-reference/schemas.md)。
+Schema Usage [Documents](./schemas.md)。
 
 ```ebnf
 schema_decl =
@@ -92,7 +92,7 @@ schema_member = [anno] id ":" type_def;
 
 ### Database
 
-Database Usage [Documents](./language-reference/databases.md)。
+Database Usage [Documents](./databases.md)。
 
 ```ebnf
 database_decl = "database" identifier "{" [database_tables] "}";
@@ -103,7 +103,7 @@ database_table = identifier ":" type_def ["as" string_literal];
 ### Use / Import
 
 Package Manager / Symbol Import
-[Documents](./language-reference/import.md)。
+[Documents](./import.md)。
 
 ```ebnf
 use_stmt = "use" identifier {"::" identifier} ["::" ("*"|multi_use)];
@@ -112,7 +112,7 @@ multi_use = "{" identifier {"," identifier} "}";
 
 ### Implement
 
-Impl Usage [Documents](./language-reference/impl.md)。
+Impl Usage [Documents](./impl.md)。
 
 ```ebnf
 impl_decl = "impl" identifier ["for" identifier] "{" {function_decl} "}";
@@ -120,7 +120,7 @@ impl_decl = "impl" identifier ["for" identifier] "{" {function_decl} "}";
 
 ### GödelScript Query
 
-Query Usage [Documents](./language-reference/queries.md)。
+Query Usage [Documents](./queries.md)。
 
 ```ebnf
 query_decl =
@@ -137,7 +137,7 @@ select_column = or_expr ["as" identifier];
 ## Statement
 
 GödelScript statement
-[Documents](./language-reference/functions.md#statement)。
+[Documents](./functions.md#statement)。
 
 ```ebnf
 statement =
@@ -201,7 +201,7 @@ in_block_expr = expression;
 
 ## Expression
 
-GödelScript Expression [Documents](./language-reference/functions.md#expression)。
+GödelScript Expression [Documents](./functions.md#expression)。
 
 ```ebnf
 expression = or_expr;
@@ -240,7 +240,7 @@ arglist = or_expr {"," or_expr};
 
 ### Initializer
 
-Usage: [Initializer List](./language-reference/functions.md#initializer-list)
+Usage: [Initializer List](./functions.md#initializer-list)
 
 ```ebnf
 initializer = "{" [initializer_pair ","] "}";

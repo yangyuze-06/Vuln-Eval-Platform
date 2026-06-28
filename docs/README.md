@@ -28,12 +28,40 @@
 - 清洗器和范围过滤：每个 CWE 维护自己的 sanitizer、barrier 和 scope filter。
 - 评测流水线：统一将 Godel JSON 结果转换为 CSV，并与 ground truth 计算 TP / FP / FN / Precision / Recall / F1。
 
-## 主要文档
+## 文档分类
 
-- `architecture.md`：当前规则框架架构。
-- `results.md`：已完成 checker 的评测结果。
-- `roadmap.md`：后续稳定化、封装和精度研究路线。
-- `evaluation_workflow.md`：CodeQL、CodeFuse-Query 实验命令与结果评测流程。
-- `how_to_add_checker.md`：新增 checker 的模板和约束。
-- `run_codefuse_queries.md`：本地运行 CodeFuse-Query 规则的方法。
-- `refactor_plan.md`：早期模块化重构计划归档。
+### 当前状态
+
+- [current/architecture.md](current/architecture.md)：当前规则框架架构。
+- [current/results.md](current/results.md)：已完成 checker 的评测结果。
+- [current/roadmap.md](current/roadmap.md)：后续稳定化、封装和精度研究路线。
+- [current/refactor_status_report.md](current/refactor_status_report.md)：本轮重构推进状态整理。
+
+### 操作指南
+
+- [guides/evaluation_workflow.md](guides/evaluation_workflow.md)：CodeQL、CodeFuse-Query 实验命令与结果评测流程。
+- [guides/run_codefuse_queries.md](guides/run_codefuse_queries.md)：本地运行 CodeFuse-Query 规则的方法。
+- [guides/how_to_add_checker.md](guides/how_to_add_checker.md)：新增 checker 的模板和约束。
+- [guides/codefuse_macos_jdk_setup.md](guides/codefuse_macos_jdk_setup.md)：macOS CodeFuse/Sparrow JDK 配置。
+- [guides/QUICK_START_PHASE2.md](guides/QUICK_START_PHASE2.md)：Phase 2 v2 evaluator 快速使用和验证。
+
+### 重构归档
+
+- [refactor/PHASE1_SUMMARY.md](refactor/PHASE1_SUMMARY.md)：Phase 1 实施总结。
+- [refactor/PHASE2_FINAL_SUMMARY.md](refactor/PHASE2_FINAL_SUMMARY.md)：Phase 2 完整收尾总结。
+- [refactor/PHASE2_EVALUATION_CORE.md](refactor/PHASE2_EVALUATION_CORE.md)：Phase 2 统一评估核心设计。
+- [refactor/PHASE2B_EVALUATOR_DETAILS.md](refactor/PHASE2B_EVALUATOR_DETAILS.md)：Phase 2B evaluator 细节。
+- [refactor/architecture_notes.md](refactor/architecture_notes.md)：早期架构诊断与路线图。
+- [refactor/refactor_plan.md](refactor/refactor_plan.md)：早期模块化重构计划归档。
+
+### 审计和排障
+
+- [audits/CROSS_PLATFORM_REPRO_AUDIT.md](audits/CROSS_PLATFORM_REPRO_AUDIT.md)：跨平台复现审计。
+- [audits/test_compare_cwe022_v2b_vs_v2.md](audits/test_compare_cwe022_v2b_vs_v2.md)：CWE-022 v2/v2b 对比。
+- [audits/env_fingerprint_current.json](audits/env_fingerprint_current.json)：当前环境指纹。
+- [audits/java-database/](audits/java-database/)：CodeFuse Java DB macOS/Linux 根因调查报告。
+
+### 模板和参考
+
+- [templates/analysis-template.md](templates/analysis-template.md)：CWE checker 分析模板。
+- [godels-file/](godels-file/)：GödelScript 语言和工具链参考资料。

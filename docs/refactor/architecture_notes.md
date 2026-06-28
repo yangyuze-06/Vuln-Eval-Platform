@@ -328,7 +328,7 @@ Vuln-Eval-Platform/
 **目标：** 建立只读配置索引，不改变现有行为
 
 **交付物：**
-- ✅ `docs/architecture_notes.md`（本文档）
+- ✅ `docs/refactor/architecture_notes.md`（本文档）
 - ✅ `configs/cwe_manifest.yml`（CWE 注册表）
 - ✅ `scripts/verify_manifest.py`（验证脚本，只读检查）
 
@@ -384,7 +384,7 @@ Vuln-Eval-Platform/
 ### 明确声明
 
 **Phase 1 只新增以下文件：**
-1. `docs/architecture_notes.md`（本文档）
+1. `docs/refactor/architecture_notes.md`（本文档）
 2. `configs/cwe_manifest.yml`（配置文件）
 3. `scripts/verify_manifest.py`（验证脚本）
 

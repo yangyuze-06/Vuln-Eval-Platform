@@ -23,19 +23,19 @@ pub fn hello() -> string {
 ## Documents
 
 * GödelScript Language Reference
-    * GödelScript [Program](./docs/language-reference/program.md)
-    * GödelScript [Type](./docs/language-reference/type.md)
-    * GödelScript [Schema](./docs/language-reference/schemas.md)
-    * GödelScript [Database](./docs/language-reference/databases.md)
-    * GödelScript [Enum](./docs/language-reference/enums.md)
-    * GödelScript [Impl](./docs/language-reference/impl.md)
-    * GödelScript [Function](./docs/language-reference/functions.md)
-    * GödelScript [Import](./docs/language-reference/import.md)
-    * GödelScript [Query](./docs/language-reference/queries.md)
-    * GödelScript [Statement](./docs/language-reference/functions.md#statement)
-    * GödelScript [Expression](./docs/language-reference/functions.md#expression)
-* GödelScript [Query Example](../example)
-* GödelScript [Syntax Definition](./docs/syntax.md)
+    * GödelScript [Program](./program.md)
+    * GödelScript [Type](./type.md)
+    * GödelScript [Schema](./schemas.md)
+    * GödelScript [Database](./databases.md)
+    * GödelScript [Enum](./enums.md)
+    * GödelScript [Impl](./impl.md)
+    * GödelScript [Function](./functions.md)
+    * GödelScript [Import](./import.md)
+    * GödelScript [Query](./queries.md)
+    * GödelScript [Statement](./functions.md#statement)
+    * GödelScript [Expression](./functions.md#expression)
+* GödelScript [Query Example](../../rules/codefuse-query)
+* GödelScript [Syntax Definition](./syntax.md)
 
 ## Compilation
 

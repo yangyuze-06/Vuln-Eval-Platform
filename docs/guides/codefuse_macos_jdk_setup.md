@@ -103,7 +103,7 @@ Full macOS DB rebuilds must be a separate phase. After rebuilding, run:
 python3 scripts/diagnose_codefuse_db_diff.py \
   --linux dataset/codefuse-db-linux/coref_java_src.db \
   --mac dataset/codefuse-db-mac-fixed/coref_java_src.db \
-  --out docs/reports_for_java_database/codefuse-db-diff-mac-fixed.md
+  --out docs/audits/java-database/codefuse-db-diff-mac-fixed.md
 ```
 
 Do not use the rebuilt DB for evaluation until it passes the DB gate and the
