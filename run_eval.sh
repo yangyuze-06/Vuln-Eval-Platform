@@ -40,19 +40,19 @@ echo "[+] All SARIF files detected."
 echo ""
 
 # 激活虚拟环境
-if [ -d "venv" ]; then
+if [ -d ".venv" ]; then
     echo "[+] Activating virtual environment"
-    source venv/bin/activate
+    source .venv/bin/activate
 fi
 
 echo "[+] Step 1: Aggregating metrics..."
-python scripts/evaluation/aggregate_results.py
+python3 scripts/evaluation/aggregate_results.py
 
 echo "[+] Step 2: Generating plots..."
-python scripts/reporting/plots_metrics.py
+python3 scripts/reporting/plots_metrics.py
 
 echo "[+] Step 3: Generating reports..."
-python scripts/reporting/generate_report.py
+python3 scripts/reporting/generate_report.py
 
 echo ""
 echo "========================================="
