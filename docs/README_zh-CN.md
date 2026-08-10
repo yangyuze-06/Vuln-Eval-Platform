@@ -156,7 +156,7 @@ experiments/README.md
 # ⚡ Quick Start
 
 ```bash
-git clone https://github.com/yangyuze-06/Vuln-Eval-Platform.git
+git clone https://github.com/L1ngSh1/Vuln-Eval-Platform.git
 cd Vuln-Eval-Platform
 
 python3 -m venv .venv
@@ -217,16 +217,16 @@ reports/report_zh.md
 
 本项目采用标准漏洞检测评测指标体系：
 
-| 指标        | 含义       |
-| --------- | -------- |
+| 指标      | 含义             |
+| --------- | ---------------- |
 | TP        | 真实检测漏洞数量 |
-| FP        | 误报数量     |
-| FN        | 漏报数量     |
-| Precision | 检测准确率    |
-| Recall    | 漏洞召回率    |
-| FNR       | 漏报率      |
-| FPR       | 误报率      |
-| FDR       | 误检率      |
+| FP        | 误报数量         |
+| FN        | 漏报数量         |
+| Precision | 检测准确率       |
+| Recall    | 漏洞召回率       |
+| FNR       | 漏报率           |
+| FPR       | 误报率           |
+| FDR       | 误检率           |
 
 ---
 

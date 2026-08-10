@@ -156,7 +156,7 @@ Refer to the official release page:
 # ⚡ Quick Start
 
 ```bash
-git clone https://github.com/yangyuze-06/Vuln-Eval-Platform.git
+git clone https://github.com/L1ngSh1/Vuln-Eval-Platform.git
 cd Vuln-Eval-Platform
 
 python3 -m venv .venv
@@ -234,16 +234,16 @@ Each CWE experiment uniformly follows these steps:
 
 This project uses a standard vulnerability detection evaluation metric system:
 
-| Metric    | Meaning |
-| --------- | -------- |
+| Metric    | Meaning                                  |
+| --------- | ---------------------------------------- |
 | TP        | True Positive (detected vulnerabilities) |
-| FP        | False Positive (false alarms) |
-| FN        | False Negative (missed vulnerabilities) |
-| Precision | Detection Precision |
-| Recall    | Vulnerability Recall |
-| FNR       | False Negative Rate |
-| FPR       | False Positive Rate |
-| FDR       | False Discovery Rate |
+| FP        | False Positive (false alarms)            |
+| FN        | False Negative (missed vulnerabilities)  |
+| Precision | Detection Precision                      |
+| Recall    | Vulnerability Recall                     |
+| FNR       | False Negative Rate                      |
+| FPR       | False Positive Rate                      |
+| FDR       | False Discovery Rate                     |
 
 ---
 
