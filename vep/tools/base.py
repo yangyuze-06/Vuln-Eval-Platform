@@ -6,7 +6,10 @@ vep.tools.codefuse and vep.tools.codeql.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Protocol
+from typing import TYPE_CHECKING, List, Optional, Protocol
+
+if TYPE_CHECKING:
+    from vep.core.manifest import CweEntry
 
 # Problem strings returned by check_environment():
 #   - unprefixed entries are fatal and must block the tool run;
@@ -46,7 +49,7 @@ class Tool(Protocol):
         """Validate tool availability and runtime environment."""
         ...
 
-    def run(self, cwe: object, db: Path, out_dir: Path) -> ToolRunResult:
+    def run(self, cwe: "CweEntry", db: Path, out_dir: Path) -> ToolRunResult:
         """Run the tool for one CWE against a database."""
         ...
 

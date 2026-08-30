@@ -1,17 +1,26 @@
-"""CodeFuse-Query (Godel) adapter: environment checks for Phase 3 / M3.1.
+"""CodeFuse-Query (Godel) adapter: environment checks for Phase 3 / M3.1,
+run + standardization for M3.2.
 
-run()/standardize() are implemented in M3.2; the discovery and environment
-gate here port scripts/evaluation/eval_checker.sh and reuse
-scripts/check_codefuse_java_env.py as-is (no second JAVA_HOME implementation).
+run() ports the godel invocation from scripts/evaluation/eval_checker.sh,
+including the godel 2.1.0 package-root workaround (official lib and the
+repo-local lib are merged into one temporary package root). standardize()
+reuses scripts/converters/codefuse_json_to_csv.py as-is. The JAVA_HOME gate
+reuses scripts/check_codefuse_java_env.py as-is (no second implementation).
 """
 
+import csv
+import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
+from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
 
+from vep.core.manifest import CweEntry
 from vep.tools.base import ToolRunResult, WARN_MARKER
 from vep.tools.config import (
     CodeFusePaths,
@@ -21,6 +30,7 @@ from vep.tools.config import (
 
 JAVA_ENV_CHECK_SCRIPT = Path("scripts/check_codefuse_java_env.py")
 JAVA_ENV_TIMEOUT_SECONDS = 120
+CODEFUSE_CONVERTER_SCRIPT = Path("scripts/converters/codefuse_json_to_csv.py")
 
 
 class CodeFuseTool:
@@ -35,12 +45,14 @@ class CodeFuseTool:
         home: Optional[str] = None,
         godel_bin: Optional[str] = None,
         official_lib: Optional[str] = None,
+        run_timeout_seconds: int = 3600,
     ):
         self.config = config
         self.project_root = project_root
         self.home_override = home
         self.godel_bin_override = godel_bin
         self.official_lib_override = official_lib
+        self.run_timeout_seconds = run_timeout_seconds
 
     def check_environment(self) -> List[str]:
         problems: List[str] = []
@@ -65,13 +77,137 @@ class CodeFuseTool:
             problems.extend(run_java_env_gate(self.project_root))
         return problems
 
-    def run(self, cwe: object, db: Path, out_dir: Path) -> ToolRunResult:
-        """Run the Godel checker for one CWE (implemented in Phase 3 / M3.2)."""
-        raise NotImplementedError("CodeFuseTool.run lands in Phase 3 / M3.2")
+    def run(self, cwe: CweEntry, db: Path, out_dir: Path) -> ToolRunResult:
+        """Run the Godel checker for one CWE. Raises on configuration errors;
+        tool failures are reported via ToolRunResult.returncode."""
+        paths = self._discover_paths()
+        rule_file = _require_rule_file(cwe)
+        db_path = _resolve_db(db, self.project_root)
+
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_json = out_dir / f"checker{cwe.id}.json"
+        log_file = out_dir / f"{cwe.slug}_godel.log"
+
+        # godel 2.1.0 resolves modules from one package root; merge official
+        # and local libs into a temporary root (port of eval_checker.sh).
+        package_root = Path(tempfile.mkdtemp(prefix="vep-godel-pkg-"))
+        try:
+            shutil.copytree(paths.official_lib, package_root, dirs_exist_ok=True)
+            shutil.copytree(paths.local_lib, package_root, dirs_exist_ok=True)
+
+            cmd = [
+                str(paths.godel_bin),
+                "-p", str(package_root),
+                "-f", str(db_path),
+                "-Of",
+                "-r", str(rule_file),
+                "--output-json", str(out_json),
+            ]
+            try:
+                proc = subprocess.run(
+                    cmd,
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    timeout=self.run_timeout_seconds,
+                    cwd=str(self.project_root),
+                )
+                stdout, stderr, returncode = proc.stdout, proc.stderr, proc.returncode
+            except subprocess.TimeoutExpired as exc:
+                stdout = exc.stdout if isinstance(exc.stdout, str) else ""
+                stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+                stderr = (stderr + f"\n[vep] timed out after {self.run_timeout_seconds}s").strip()
+                returncode = 124
+
+            log_file.write_text(
+                f"$ {' '.join(cmd)}\n\n--- stdout ---\n{stdout}\n--- stderr ---\n{stderr}\n",
+                encoding="utf-8",
+            )
+            raw_output = out_json if out_json.is_file() else None
+            return ToolRunResult(
+                tool=self.name,
+                cwe=cwe.name,
+                raw_output=raw_output,
+                returncode=returncode,
+                log_file=log_file,
+            )
+        finally:
+            shutil.rmtree(package_root, ignore_errors=True)
 
     def standardize(self, run: ToolRunResult, out_csv: Path) -> Path:
-        """Convert Godel JSON to normalized findings CSV (Phase 3 / M3.2)."""
-        raise NotImplementedError("CodeFuseTool.standardize lands in Phase 3 / M3.2")
+        """Convert Godel JSON to the normalized findings CSV (dedup by
+        testcase, reason column kept — same semantics as eval_checker.sh)."""
+        if run.raw_output is None:
+            raise RuntimeError(
+                f"No raw output for {run.cwe} (tool returncode={run.returncode});"
+                f" see log: {run.log_file}"
+            )
+        converter = _load_converter(self.project_root)
+        records = converter.load_records(run.raw_output)
+        rows = converter.build_rows(
+            records,
+            default_rule=run.cwe,
+            include_reason=True,
+            unknown_label="UNKNOWN",
+        )
+        rows = converter.dedup_by_testcase(rows)
+
+        out_csv = Path(out_csv)
+        out_csv.parent.mkdir(parents=True, exist_ok=True)
+        with out_csv.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["testcase", "ruleId", "file", "line", "reason"])
+            writer.writerows(rows)
+        return out_csv
+
+    def _discover_paths(self) -> CodeFusePaths:
+        paths, _notes = discover_codefuse(
+            self.config,
+            self.project_root,
+            home_override=self.home_override,
+            godel_bin_override=self.godel_bin_override,
+            official_lib_override=self.official_lib_override,
+        )
+        if paths is None:
+            raise RuntimeError(
+                "CodeFuse home not found; run check_environment() for details."
+            )
+        if not (paths.godel_bin.is_file() and os.access(paths.godel_bin, os.X_OK)):
+            raise RuntimeError(f"godel executable missing: {paths.godel_bin}")
+        if not paths.official_lib.is_dir():
+            raise RuntimeError(f"official CodeFuse lib missing: {paths.official_lib}")
+        if not paths.local_lib.is_dir():
+            raise RuntimeError(f"local rule lib missing: {paths.local_lib}")
+        return paths
+
+
+def _require_rule_file(cwe: CweEntry) -> Path:
+    if cwe.codefuse_rule_file is None:
+        raise ValueError(f"CWE {cwe.id} has no codefuse.rule_file in the manifest")
+    if not cwe.codefuse_rule_file.is_file():
+        raise FileNotFoundError(f"Rule file not found: {cwe.codefuse_rule_file}")
+    return cwe.codefuse_rule_file
+
+
+def _resolve_db(db: Path, project_root: Path) -> Path:
+    db_path = Path(db)
+    if not db_path.is_absolute():
+        db_path = project_root / db_path
+    if not db_path.is_dir():
+        raise FileNotFoundError(f"CodeFuse database not found: {db_path}")
+    return db_path
+
+
+@lru_cache(maxsize=None)
+def _load_converter(project_root: Path):
+    script = project_root / CODEFUSE_CONVERTER_SCRIPT
+    if not script.is_file():
+        raise FileNotFoundError(f"Converter script not found: {script}")
+    spec = importlib.util.spec_from_file_location("vep_codefuse_json_to_csv", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _check_codefuse_paths(paths: CodeFusePaths) -> List[str]:
