@@ -2,13 +2,18 @@
 
 以下是当前 CodeFuse-Query 规则在 OWASP Benchmark 上的结果。`Findings` 表示 evaluator 去重后的 finding 数量。
 
+数据来源：`reports/data/metrics_v2_codefuse_all.json`（2026-08-31 mac-fixed DB 全量回归，v2 评估口径，
+见 `docs/audits/PARITY_M34_CODEFUSE_PIPELINE.md`）。
+
 ## 总览
 
 - 已完成 checker：11 个。
-- 所有已完成 checker 当前在 benchmark 上 Recall 都为 1.0000。
-- CWE-330 和 CWE-614 已达到 Precision / Recall / F1 全部 1.0000。
+- 所有已完成 checker 当前在 benchmark 上 Recall 都为 1.0000，FN = 0。
+- CWE-330、CWE-614、CWE-328 已达到 Precision / Recall / F1 全部 1.0000。
+- Overall：TP=1415，FP=552，FN=0，TN=773，Precision=0.7194，Recall=1.0000，F1=0.8368。
 - CWE-501 Precision Patch 1 将 outside-scope findings 从 493 降到 0，同时保持 FN = 0。
-- CWE-328 当前唯一 FP 来自 `328S` 安全样本与 benchmark 标注边界；尝试移除 `SHA512` 会导致 39 个 FN，因此不作为安全优化。
+- CWE-328 的历史"1 个 FP"（`328S` 样本）在 v2 评估口径下确认为 TP：ground truth 官方标注
+  `BenchmarkTest00003,hash,true,328S` 为漏洞样本，旧 evaluator 将 `328S` 排除出 CWE-328 scope 属于口径偏差。
 
 ## 污点型漏洞检查器
 
@@ -31,7 +36,7 @@
 | CWE | 类别 | Findings | TP | FP | FN | Precision | Recall | F1 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | CWE-327 | 危险或不安全加密算法 | 157 | 130 | 27 | 0 | 0.8280 | 1.0000 | 0.9059 |
-| CWE-328 | 弱哈希算法 | 129 | 128 | 1 | 0 | 0.9922 | 1.0000 | 0.9961 |
+| CWE-328 | 弱哈希算法 | 129 | 129 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 |
 | CWE-330 | 随机数不足 | 218 | 218 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 |
 
 ## Web 配置 / 对象状态检查器
@@ -44,5 +49,5 @@
 ## 备注
 
 - CWE-501 Patch 1 新增了局部 scope filter，用于过滤 remember-me cookie session cache 写入。Patch 前 outside-scope findings 为 493，Patch 后为 0。
-- CWE-328 的 1 个 FP 是 outside-scope finding，来自 `BenchmarkTest00003` 的 `328S` 标注；它与 39 个真阳性共享 `hashAlg1` / `SHA512` 模式，不能用通用规则安全区分。
+- CWE-328：ground truth 中唯一 `328S` 行（`BenchmarkTest00003`）被 v2 evaluator 归一化计入 CWE-328。旧口径（`eval_codefuse_results.py`）将其排除在 scope 外并计为 FP；本轮全量回归中 `TaintTracking.gdl` 与规则未做任何修改，findings 逐字节一致（见 parity 审计）。历史上"移除 `SHA512` 会引入 39 个 FN"的结论仍有效。
 - 精度优化应优先保持在 CWE-specific sink/sanitizer 模块内；任何公共 `TaintTracking.gdl` 修改都必须对所有已完成 checker 做回归。

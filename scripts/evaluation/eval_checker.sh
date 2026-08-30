@@ -1,9 +1,12 @@
 #!/bin/bash
 # ==============================================================================
 # 通用规则一键评测脚本 (CodeFuse-Query)
+# Phase 3 / M3.4 起为兼容 wrapper：实际逻辑已迁移到
+# scripts/evaluation/run_pipeline.py（v2 评估核心，产物为 codefuse_eval_v2）。
 # 用法: ./scripts/evaluation/eval_checker.sh <CWE编号>
 # 示例: ./scripts/evaluation/eval_checker.sh 078
 #       ./scripts/evaluation/eval_checker.sh 022
+# 可用环境变量: DB_DIR（覆盖数据库路径）、CODEFUSE_HOME（覆盖工具路径）
 # ==============================================================================
 set -e
 
@@ -27,128 +30,14 @@ if [ -f ".venv/bin/activate" ]; then
     source .venv/bin/activate
 fi
 
-RULE_FILE="rules/codefuse-query/CWE-${CWE_ID}/checker${CWE_ID}.gdl"
-DB_DIR="${DB_DIR:-dataset/codefuse-db}"
-RESULT_DIR="experiments/cwe-${CWE_ID}/results/codefuse-query"
-EVAL_DIR="experiments/cwe-${CWE_ID}/eval/codefuse_eval"
-JSON_FILE="${RESULT_DIR}/checker${CWE_ID}.json"
-CSV_FILE="${RESULT_DIR}/cwe${CWE_ID}_codefuse.csv"
-
-if [ -z "${CODEFUSE_HOME:-}" ] && command -v sparrow >/dev/null 2>&1; then
-    SPARROW_BIN="$(command -v sparrow)"
-    # Resolve symlink cross-platform using Python to find the true installation directory
-    SPARROW_REALPATH=$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "${SPARROW_BIN}")
-    CODEFUSE_HOME="$( cd "$( dirname "${SPARROW_REALPATH}" )" && pwd )"
+DB_ARGS=()
+if [ -n "${DB_DIR:-}" ]; then
+    DB_ARGS=(--db "${DB_DIR}")
 fi
 
-if [ -z "${CODEFUSE_HOME:-}" ]; then
-    for candidate in \
-        "${HOME}/Workspace/Tools/static-analysis-tools/codefuse/sparrow-cli" \
-        "${HOME}/tools/static-analysis-tools/codefuse/sparrow-cli" \
-        "/opt/codefuse/sparrow-cli"
-    do
-        if [ -x "${candidate}/godel-script/usr/bin/godel" ] && [ -d "${candidate}/lib" ]; then
-            CODEFUSE_HOME="${candidate}"
-            echo "⚠️  警告: 自动回退并从默认硬编码路径找到了 CodeFuse: ${CODEFUSE_HOME}"
-            echo "   推荐将其可执行文件添加到 PATH 或设置 CODEFUSE_HOME 环境变量以便跨环境运行。"
-            break
-        fi
-    done
-fi
-
-CODEFUSE_HOME="${CODEFUSE_HOME:-}"
-GODEL_BIN="${GODEL_BIN:-${CODEFUSE_HOME}/godel-script/usr/bin/godel}"
-OFFICIAL_LIB="${OFFICIAL_LIB:-${CODEFUSE_HOME}/lib}"
-LOCAL_LIB="${LOCAL_LIB:-${PROJECT_ROOT}/rules/codefuse-query/lib}"
-
-echo "============================================"
-echo " CWE-${CWE_ID} 评测流水线"
-echo "============================================"
-echo ""
-
-# Step 1: Run CodeFuse-Query through godel
-echo "[1/3] 正在执行 CodeFuse-Query 规则检测..."
-echo "  规则: ${RULE_FILE}"
-mkdir -p "${RESULT_DIR}"
-
-if [ ! -x "${GODEL_BIN}" ]; then
-    echo "❌ 错误: 找不到 godel 可执行文件: ${GODEL_BIN}"
-    echo "  请确认 CODEFUSE_HOME 指向 sparrow-cli 目录，例如："
-    echo "  export CODEFUSE_HOME=\"\$HOME/Workspace/Tools/static-analysis-tools/codefuse/sparrow-cli\""
-    exit 1
-fi
-
-if [ ! -d "${OFFICIAL_LIB}" ]; then
-    echo "❌ 错误: 找不到官方 CodeFuse-Query lib: ${OFFICIAL_LIB}"
-    echo "  请确认 CODEFUSE_HOME 指向 sparrow-cli 目录，例如："
-    echo "  export CODEFUSE_HOME=\"\$HOME/Workspace/Tools/static-analysis-tools/codefuse/sparrow-cli\""
-    exit 1
-fi
-
-if [ ! -d "${LOCAL_LIB}" ]; then
-    echo "❌ 错误: 找不到仓库本地 CodeFuse-Query lib: ${LOCAL_LIB}"
-    exit 1
-fi
-
-GODEL_PACKAGE_ROOT="$(mktemp -d)"
-cleanup_godel_package_root() {
-    rm -rf "${GODEL_PACKAGE_ROOT}"
-}
-trap cleanup_godel_package_root EXIT
-
-# godel 2.1.0 effectively resolves modules from one package root. Build a
-# temporary root containing official modules plus this repo's local modules.
-cp -R "${OFFICIAL_LIB}/." "${GODEL_PACKAGE_ROOT}/"
-cp -R "${LOCAL_LIB}/." "${GODEL_PACKAGE_ROOT}/"
-
-"${GODEL_BIN}" \
-  -p "${GODEL_PACKAGE_ROOT}" \
-  -f "${PROJECT_ROOT}/${DB_DIR}" \
-  -Of \
-  -r "${PROJECT_ROOT}/${RULE_FILE}" \
-  --output-json "${PROJECT_ROOT}/${JSON_FILE}"
-
-if [ ! -f "${JSON_FILE}" ]; then
-    echo "❌ 错误: 未生成 JSON 结果文件: ${JSON_FILE}"
-    echo "  请检查规则文件是否有语法错误。"
-    exit 1
-fi
-echo "  ✅ 检测完成，结果已输出: ${JSON_FILE}"
-echo ""
-
-# Step 2: Convert JSON -> CSV
-echo "[2/3] 正在将 JSON 结果转换为 CSV 格式..."
-python scripts/converters/codefuse_json_to_csv.py \
-  "${JSON_FILE}" \
-  "${CSV_FILE}" \
-  --default-rule "CWE-${CWE_ID}" \
-  --include-reason
-echo ""
-
-# Step 3: Evaluate against ground truth
-echo "[3/3] 正在与 Ground Truth 对比计算评测指标..."
-mkdir -p "${EVAL_DIR}"
-python scripts/evaluation/eval_codefuse_results.py \
-  --expected expectedresults-1.2.csv \
-  --results "${CSV_FILE}" \
-  --cwe "CWE-${CWE_ID}" \
-  --outdir "${EVAL_DIR}" \
-  --format csv \
-  --fp-mode all_non_gt
-
-echo ""
-echo "============================================"
-echo " ✅ CWE-${CWE_ID} 评测流水线执行完成！"
-echo "============================================"
-echo ""
-echo "📊 评测指标: ${EVAL_DIR}/metrics.json"
-echo "✅ 真正例:   ${EVAL_DIR}/tp.csv"
-echo "⚠️  误报列表: ${EVAL_DIR}/fp.csv"
-echo "❌ 漏报列表: ${EVAL_DIR}/fn.csv"
-echo ""
-
-if [ -f "${EVAL_DIR}/metrics.json" ]; then
-    echo "--- 指标摘要 ---"
-    cat "${EVAL_DIR}/metrics.json"
-    echo ""
-fi
+exec python3 scripts/evaluation/run_pipeline.py \
+    --tool codefuse \
+    --cwe "${CWE_ID}" \
+    --stages run,evaluate \
+    --no-skip-existing \
+    ${DB_ARGS+"${DB_ARGS[@]}"}

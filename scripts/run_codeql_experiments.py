@@ -1,8 +1,24 @@
+"""[DEPRECATED since Phase 3 / M3.4] One-shot CodeQL experiment runner.
+
+Superseded by the manifest-driven unified pipeline:
+
+    python3 scripts/evaluation/run_pipeline.py --tool codeql --cwe all \
+        --stages run,evaluate,aggregate --db dataset/codeql-db/benchmark-java
+
+The pipeline reads CWEs and query directories from configs/cwe_manifest.yml
+(including the CWE-328_328S special case) and evaluates with the v2 core.
+Kept for one release cycle as a reference; will be removed afterwards.
+"""
+
 import os
 import subprocess
 import sys
 
 def main():
+    print(
+        "⚠️  Deprecated: use scripts/evaluation/run_pipeline.py --tool codeql ...\n"
+        "   (this script is kept for reference only and will be removed)"
+    )
     cwes_map = {
         "022": "CWE-022",
         "078": "CWE-078",

@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+# ==============================================================================
+# Legacy entry point — Phase 3 / M3.4 起为统一 pipeline 的兼容 wrapper。
+# 评估/聚合/报告逻辑已迁移到 scripts/evaluation/run_pipeline.py
+# （v2 评估核心 + vep.aggregate.v2 聚合 + generate_report_v2 报告）。
+# 本脚本保留 SARIF 存在性预检查，行为对齐旧版 run_eval.sh。
+# ==============================================================================
+
 echo "========================================="
 echo "   CodeQL Evaluation Framework"
 echo "========================================="
@@ -45,14 +52,12 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
-echo "[+] Step 1: Aggregating metrics..."
-python3 scripts/evaluation/aggregate_results.py
-
-echo "[+] Step 2: Generating plots..."
-python3 scripts/reporting/plots_metrics.py
-
-echo "[+] Step 3: Generating reports..."
-python3 scripts/reporting/generate_report.py
+echo "[+] Delegating to unified pipeline (evaluate, aggregate, report)..."
+python3 scripts/evaluation/run_pipeline.py \
+    --tool codeql \
+    --cwe all \
+    --stages evaluate,aggregate,report \
+    --no-skip-existing
 
 echo ""
 echo "========================================="
