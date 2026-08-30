@@ -35,7 +35,7 @@ providing an engineered, scalable platform for vulnerability detection evaluatio
 
 - Completed 11 CodeFuse-Query / GodelScript Java SAST checkers.
 - Established a modular rule framework for `source / helper / taint / sink / sanitizer`.
-- Added unified evaluation entry point: `scripts/evaluation/eval_checker.sh <CWE>`.
+- Added a unified manifest-driven pipeline: `scripts/evaluation/run_pipeline.py` (Phase 3).
 - The current 11 checkers have all achieved `Recall = 1.0000` on the OWASP Benchmark.
 - The project has entered the regression, packaging, and precision research stages.
 
@@ -124,7 +124,7 @@ Vuln-Eval-Lab
 │   ├── data
 │   └── figs
 │
-├── run_eval.sh                # One-click evaluation entry point
+├── run_eval.sh                # Legacy CodeQL entry (wrapper around the pipeline)
 ├── requirements.txt
 ├── expectedresults-1.2.csv    # Benchmark expected results
 ├── LICENSE
@@ -164,52 +164,42 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 
-# ---- CodeQL Evaluation ----
-# 1. Build CodeQL database (requires codeql CLI)
-# 2. Run CodeQL queries manually to generate SARIF files
-# 3. Aggregate results:
-./run_eval.sh
+# ---- Unified pipeline (recommended, Phase 3) ----
+# Full CodeFuse regression (run tools -> evaluate -> aggregate):
+python scripts/evaluation/run_pipeline.py --tool codefuse --cwe all \
+  --db dataset/codefuse-db-mac-fixed
 
-# ---- CodeFuse-Query Evaluation ----
-# Prerequisites: install sparrow CLI and set CODEFUSE_HOME
-# export CODEFUSE_HOME="$HOME/Workspace/Tools/static-analysis-tools/codefuse/sparrow-cli"
+# Evaluate existing SARIF findings with CodeQL and generate the v2 report:
+python scripts/evaluation/run_pipeline.py --tool codeql --cwe all \
+  --stages evaluate,aggregate,report
 
-# Evaluate a specific CWE (e.g., CWE-022)
-bash scripts/evaluation/eval_checker.sh 022
+# Single CWE (CodeFuse):
+python scripts/evaluation/run_pipeline.py --tool codefuse --cwe 022
 
-# Or loop over all 11 CWEs:
-for cwe in 022 078 079 089 090 327 328 330 501 614 643; do
-  bash scripts/evaluation/eval_checker.sh $cwe
-done
-
-# Then aggregate all results:
-python scripts/evaluation/aggregate_results.py
-python scripts/reporting/plots_metrics.py
-python scripts/reporting/generate_report.py
+# ---- Legacy wrappers (still work, forward to the pipeline) ----
+./run_eval.sh                                # CodeQL: SARIF precheck + evaluate/aggregate/report
+bash scripts/evaluation/eval_checker.sh 022  # CodeFuse single CWE
 ```
 
 ---
 
-## ⚡ One-Click Evaluation (Recommended in v1.1)
+## ⚡ Unified Pipeline (Recommended in v2.0)
 
-After completing the detection and generating SARIF files:
+`scripts/evaluation/run_pipeline.py` is the manifest-driven main entry. It will:
 
-```bash
-./run_eval.sh
-```
-
-This command will automatically:
-
-* Check if SARIF files are complete
-* Aggregate metrics for each CWE
-* Generate performance visualization charts
+* Check the tool environment (including the macOS `JAVA_HOME` gate)
+* Run the selected tool(s), or skip straight to evaluation on existing findings
+* Evaluate with the v2 core (`vep.eval.v2` metrics + tp/fp/fn/outside-scope CSVs)
+* Aggregate multi-CWE overall metrics (`vep.aggregate.v2`)
 * Output English evaluation report
 * Output Chinese evaluation report
 
 Result output locations:
 
 ```
-reports/data/metrics.json
+reports/data/metrics_v2_codefuse_all.json   # CodeFuse aggregate (vep.aggregate.v2)
+reports/data/metrics_v2_codeql_all.json     # CodeQL aggregate
+experiments/cwe-<ID>/eval/codefuse_eval_v2/ # per-CWE metrics + tp/fp/fn CSVs
 reports/figs/
 reports/report.md
 reports/report_zh.md

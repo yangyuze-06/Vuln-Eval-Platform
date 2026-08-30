@@ -1,5 +1,10 @@
 # 运行模块化 CodeFuse-Query Checker
 
+> **Phase 3 起**：主线入口为 `scripts/evaluation/run_pipeline.py`（见
+> [evaluation_workflow.md](evaluation_workflow.md)）。本文描述的 `eval_checker.sh`
+> 现在是兼容 wrapper（内部转发 pipeline，产物目录为 `codefuse_eval_v2`），
+> 下文的手工 godel 命令仍可用于理解底层调用形态。
+
 模块化 Java checker 同时依赖官方 CodeFuse schema 模块，以及仓库本地的安全规则模块：
 
 ```text

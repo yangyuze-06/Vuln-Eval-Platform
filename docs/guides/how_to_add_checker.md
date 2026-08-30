@@ -118,6 +118,6 @@ fn main() {
 3. 新增 sanitizer 模块，即使第一版只是 default false。
 4. `checkerXXX.gdl` 尽量控制在 150 行以内。
 5. 添加最小 positive / negative Java 示例。
-6. 运行 `./scripts/evaluation/eval_checker.sh XXX`。
+6. 运行 `python3 scripts/evaluation/run_pipeline.py --tool codefuse --cwe XXX`（或兼容 wrapper `./scripts/evaluation/eval_checker.sh XXX`）。
 7. 在 experiment report 中记录 TP / FP / FN / Precision / Recall / F1。
 8. 如果需要 precision patch，suppression 应保持 CWE-specific，并说明是否 benchmark-only。

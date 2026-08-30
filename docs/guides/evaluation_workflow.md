@@ -49,27 +49,37 @@ python3 scripts/check_codefuse_java_env.py --require-version 21 --require-module
 
 该 gate 必须 PASS 后再执行 `sparrow database create`。
 
-### 推荐方式：统一 runner
+### 推荐方式：统一 pipeline（Phase 3 起）
 
-当前主线推荐使用 `eval_checker.sh` 运行单个 CWE。runner 会负责执行 GodelScript checker、生成 JSON、转换 CSV，并输出 TP / FP / FN / metrics。
+主线入口是 `scripts/evaluation/run_pipeline.py`：manifest 驱动，一条命令完成
+工具执行 → 标准化 → v2 评估 → 聚合（→ 报告）。
 
 ```bash
-./scripts/evaluation/eval_checker.sh 022
-./scripts/evaluation/eval_checker.sh 089
+# 全量 11 个 checker（CodeFuse）；DB 路径按机器指定
+python3 scripts/evaluation/run_pipeline.py --tool codefuse --cwe all \
+  --db dataset/codefuse-db-mac-fixed
+
+# 全量 CodeQL 评估（SARIF 已存在时无需 --db 工具运行）
+python3 scripts/evaluation/run_pipeline.py --tool codeql --cwe all \
+  --stages evaluate,aggregate,report
+
+# 单个 CWE 调试
+python3 scripts/evaluation/run_pipeline.py --tool codefuse --cwe 022
 ```
 
-输出位置：
+输出位置（v2 口径）：
 
 ```text
 experiments/cwe-<ID>/results/codefuse-query/checker<ID>.json
 experiments/cwe-<ID>/results/codefuse-query/cwe<ID>_codefuse.csv
-experiments/cwe-<ID>/eval/codefuse_eval/metrics.json
-experiments/cwe-<ID>/eval/codefuse_eval/tp.csv
-experiments/cwe-<ID>/eval/codefuse_eval/fp.csv
-experiments/cwe-<ID>/eval/codefuse_eval/fn.csv
+experiments/cwe-<ID>/eval/codefuse_eval_v2/metrics.json   # + tp/fp/fn/outside_scope.csv
+reports/data/metrics_v2_codefuse_all.json                 # 聚合（vep.aggregate.v2）
+reports/report.md                                         # --stages 含 report 时
 ```
 
-更完整的 runner 说明见 [run_codefuse_queries.md](run_codefuse_queries.md)。
+兼容 wrapper：`./scripts/evaluation/eval_checker.sh <ID>`（单 CWE，等价于
+`run_pipeline.py --tool codefuse --cwe <ID> --stages run,evaluate`，可用 `DB_DIR` 覆盖数据库）。
+更完整的说明见 [run_codefuse_queries.md](run_codefuse_queries.md)。
 
 ### 手动构建数据库
 
@@ -112,6 +122,8 @@ rules/codefuse-query/CWE-022/analysis-and-backup/sinkfinder.gdl
 这些文件适合追溯早期定位过程，不作为当前主线 checker 入口。
 
 ## 结果分析
+
+以下为 pipeline 内部使用的底层步骤，仅在需要单步调试时手动执行。
 
 ### CodeQL：SARIF 转 CSV
 
@@ -163,16 +175,27 @@ reports/
 
 ## 自动评估流程
 
-完整自动评估入口：
+主线入口（CodeFuse / CodeQL / both，manifest 驱动）：
 
 ```bash
-./run_eval.sh
+python3 scripts/evaluation/run_pipeline.py --tool codefuse --cwe all \
+  --db dataset/codefuse-db-mac-fixed
+```
+
+兼容 wrapper（旧入口保留，内部已转发 pipeline）：
+
+```bash
+./run_eval.sh          # CodeQL：SARIF 预检查 + evaluate,aggregate,report
+./scripts/evaluation/eval_checker.sh 022   # CodeFuse 单 CWE
 ```
 
 脚本级终端 / VSCode 详细用法见 [../../scripts/README.md](../../scripts/README.md)。
 
 ## 当前同步说明
 
+- 评估主线为 `scripts/evaluation/run_pipeline.py`（Phase 3 起）；旧评估脚本
+  （`eval_codefuse_results.py` / `aggregate_results.py` / `generate_report.py`）保留但不再是主线。
+- `scripts/run_codeql_experiments.py` 自 Phase 3 M3.4 起标记 deprecated，将由 pipeline 取代。
 - `rules/codefuse-query/CWE-022` 当前主线规则为 `checker022.gdl`。
 - CWE-022 早期调试规则和辅助定位脚本已归档到 `analysis-and-backup/`。
 - CodeFuse JSON 转 CSV 工具为 `scripts/converters/codefuse_json_to_csv.py`。
