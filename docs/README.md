@@ -51,7 +51,8 @@
 - [refactor/PHASE2_FINAL_SUMMARY.md](refactor/PHASE2_FINAL_SUMMARY.md)：Phase 2 完整收尾总结。
 - [refactor/PHASE2_EVALUATION_CORE.md](refactor/PHASE2_EVALUATION_CORE.md)：Phase 2 统一评估核心设计。
 - [refactor/PHASE2B_EVALUATOR_DETAILS.md](refactor/PHASE2B_EVALUATOR_DETAILS.md)：Phase 2B evaluator 细节。
-- [refactor/PHASE3_PLAN.md](refactor/PHASE3_PLAN.md)：Phase 3 工具抽象层与统一实验入口计划（当前阶段）。
+- [refactor/PHASE3_PLAN.md](refactor/PHASE3_PLAN.md)：Phase 3 工具抽象层与统一实验入口计划。
+- [refactor/PHASE4_PLAN.md](refactor/PHASE4_PLAN.md)：Phase 4 测试体系与 CI 计划（当前阶段）。
 - [refactor/architecture_notes.md](refactor/architecture_notes.md)：早期架构诊断与路线图。
 - [refactor/refactor_plan.md](refactor/refactor_plan.md)：早期模块化重构计划归档。
 
