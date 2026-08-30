@@ -1,0 +1,34 @@
+# VEP 工具路径配置
+# 用途：统一管理 CodeFuse / CodeQL 工具与数据库路径（Phase 3 / M3.1）
+# 发现优先级：CLI 参数 > 环境变量 > 本文件 > PATH 探测 > 内置候选路径
+# 维护：工具安装位置变化时只需改此文件，manifest 仍只负责 CWE 索引
+
+version: "1.0"
+updated: "2026-08-31"
+
+codefuse:
+  # CodeFuse/Sparrow 安装目录（应包含 godel-script/ 与 lib/）
+  # null 时按优先级探测：环境变量 CODEFUSE_HOME > PATH 中的 sparrow > 内置候选路径
+  home: null
+  # godel 可执行文件；null 时默认 <home>/godel-script/usr/bin/godel，环境变量 GODEL_BIN 优先
+  godel_bin: null
+  # 官方 schema 模块目录；null 时默认 <home>/lib，环境变量 OFFICIAL_LIB 优先
+  official_lib: null
+
+codeql:
+  # CodeQL CLI：可执行名（从 PATH 查找）或绝对路径，环境变量 CODEQL_BIN 优先
+  bin: codeql
+
+# 数据库路径（相对于项目根；pipeline 的 --db 参数可覆盖）
+databases:
+  # 与 manifest 保持一致；实际目录按机器命名为 codefuse-db-mac-fixed / codefuse-db-linux，
+  # 跨机器运行时通过 --db 或 DB_DIR 环境变量指定
+  codefuse: dataset/codefuse-db
+  # 修正 manifest 中不完整的路径：CodeQL 实际数据库目录包含 benchmark-java 子目录
+  codeql: dataset/codeql-db/benchmark-java
+
+# 运行前环境检查
+env_checks:
+  # 运行 CodeFuse 前强制校验 JAVA_HOME，拦截 Homebrew keg prefix
+  # （类型解析退化根因，见 docs/audits/java-database/）
+  codefuse_java_env: true
