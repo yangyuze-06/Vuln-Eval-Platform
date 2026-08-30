@@ -1,0 +1,18 @@
+{
+  "schema_version": "vep.aggregate.v2",
+  "tool": "codefuse",
+  "fp_mode": "all_non_gt",
+  "included_count": 2,
+  "overall": {
+    "tp": 3,
+    "fp": 3,
+    "fn": 0,
+    "tn": 1,
+    "precision": 0.5,
+    "recall": 1.0,
+    "f1": 0.6667,
+    "fnr": 0.0,
+    "fpr": 0.75,
+    "fdr": 0.5
+  }
+}

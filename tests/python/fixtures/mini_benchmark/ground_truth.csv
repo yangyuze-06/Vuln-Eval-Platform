@@ -1,0 +1,10 @@
+# mini benchmark ground truth (Phase 4 M4.4 golden fixtures)
+# The "328S" row mirrors the real expectedresults-1.2.csv special case:
+# BenchmarkTest00003 must load as a VULNERABLE CWE-328 case.
+# see docs/audits/PARITY_M34_CODEFUSE_PIPELINE.md
+BenchmarkTest00001,hash,true,328
+BenchmarkTest00002,hash,false,328
+BenchmarkTest00003,hash,true,328S
+BenchmarkTest00004,cmdi,true,901
+BenchmarkTest00005,cmdi,false,901
+BenchmarkTest00006,cmdi,false,901
