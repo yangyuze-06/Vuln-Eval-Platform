@@ -58,6 +58,7 @@
 ### 审计和排障
 
 - [audits/CROSS_PLATFORM_REPRO_AUDIT.md](audits/CROSS_PLATFORM_REPRO_AUDIT.md)：跨平台复现审计。
+- [audits/PARITY_M34_CODEFUSE_PIPELINE.md](audits/PARITY_M34_CODEFUSE_PIPELINE.md)：Phase 3 M3.4 pipeline 对齐审计。
 - [audits/test_compare_cwe022_v2b_vs_v2.md](audits/test_compare_cwe022_v2b_vs_v2.md)：CWE-022 v2/v2b 对比。
 - [audits/env_fingerprint_current.json](audits/env_fingerprint_current.json)：当前环境指纹。
 - [audits/java-database/](audits/java-database/)：CodeFuse Java DB macOS/Linux 根因调查报告。
