@@ -2,3 +2,4 @@ matplotlib
 pyyaml
 numpy
 seaborn
+pytest
