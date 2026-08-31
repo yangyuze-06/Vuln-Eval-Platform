@@ -75,6 +75,9 @@ experiments/*/results/**/*.csv
 experiments/*/results/**/Createsarif.txt
 experiments/cwe-022/results
 experiments/
+# ...but keep committed test fixtures, even though they contain an
+# experiments/ directory (tests/python/fixtures/mini_benchmark/)
+!tests/python/fixtures/**
 
 ############################
 # Generated reports

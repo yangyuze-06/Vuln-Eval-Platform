@@ -1,0 +1,4 @@
+testcase,ruleId,file,line,reason
+BenchmarkTest00004,CWE-901,y/BenchmarkTest00004.java,40,fake
+BenchmarkTest00005,CWE-901,y/BenchmarkTest00005.java,50,fake
+BenchmarkTest00007,CWE-901,y/BenchmarkTest00007.java,70,fake
