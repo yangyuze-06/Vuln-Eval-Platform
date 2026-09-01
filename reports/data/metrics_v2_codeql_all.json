@@ -2,7 +2,7 @@
   "schema_version": "vep.aggregate.v2",
   "tool": "codeql",
   "fp_mode": "all_non_gt",
-  "generated_at": "2026-08-30T16:46:36.592343Z",
+  "generated_at": "2026-09-01T14:37:35.977278Z",
   "included_count": 11,
   "cwes": {
     "CWE-022": {
