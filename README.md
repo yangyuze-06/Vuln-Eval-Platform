@@ -31,7 +31,14 @@ providing an engineered, scalable platform for vulnerability detection evaluatio
 
 ## 🆕 Release Notes
 
-### v2.0 (Current Version)
+### v3.0.0 (Current Version)
+
+- Unified CodeFuse-Query and CodeQL execution under `scripts/evaluation/run_pipeline.py`.
+- Added automatic tool discovery and the CodeFuse `JAVA_HOME` environment gate.
+- Added resumable multi-CWE runs, 156 tests, golden fixtures, and Python 3.9/3.11 CI.
+- Added combined CodeFuse-Query/CodeQL reports plus standalone reports for each tool.
+
+### v2.0
 
 - Completed 11 CodeFuse-Query / GodelScript Java SAST checkers.
 - Established a modular rule framework for `source / helper / taint / sink / sanitizer`.
@@ -131,11 +138,7 @@ Vuln-Eval-Lab
 └── README.md
 ```
 
-For more details on the experimental process, please refer to:
-
-```
-experiments/README.md
-```
+For more details, see the [evaluation workflow](docs/guides/evaluation_workflow.md).
 
 ---
 
@@ -155,40 +158,82 @@ Refer to the official release page:
 
 # ⚡ Quick Start
 
+### Get the source
+
 ```bash
 git clone https://github.com/L1ngSh1/Vuln-Eval-Platform.git
 cd Vuln-Eval-Platform
+```
 
+### macOS
+
+Install OpenJDK 17 with Homebrew, then resolve the real JDK bundle path. Using
+`brew --prefix` works on both Apple Silicon and Intel Homebrew installations.
+
+```bash
+brew install openjdk@17
+export JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$JAVA_HOME/bin:$PATH"
+export DB_CODEFUSE="dataset/codefuse-db-mac-fixed"
+python3 scripts/check_codefuse_java_env.py
+```
+
+### Linux
+
+Install a full JDK rather than a JRE. For Debian/Ubuntu:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-venv openjdk-17-jdk
+
+export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+export PATH="$JAVA_HOME/bin:$PATH"
+export DB_CODEFUSE="dataset/codefuse-db-linux"
+python3 scripts/check_codefuse_java_env.py
+```
+
+For other Linux distributions, install their OpenJDK 17 development package
+and keep the same `JAVA_HOME` discovery command.
+
+The database directories above are machine-specific examples. If your database
+is elsewhere, set `DB_CODEFUSE` to its absolute path.
+
+### Python environment
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
 
-pip install -r requirements.txt
+### Run the evaluation
 
-# ---- Unified pipeline (recommended, Phase 3) ----
-# Full CodeFuse regression (run tools -> evaluate -> aggregate):
-python scripts/evaluation/run_pipeline.py --tool codefuse --cwe all \
-  --db dataset/codefuse-db-mac-fixed
+The commands below are identical on macOS and Linux after `DB_CODEFUSE` is set.
 
-# Evaluate existing SARIF findings with CodeQL and generate the v2 report:
-python scripts/evaluation/run_pipeline.py --tool codeql --cwe all \
-  --stages evaluate,aggregate,report
+```bash
+# Fresh CodeFuse regression: run -> evaluate -> aggregate -> report
+python3 scripts/evaluation/run_pipeline.py --tool codefuse --cwe all \
+  --db "$DB_CODEFUSE" \
+  --stages run,evaluate,aggregate,report \
+  --no-skip-existing --keep-going
 
-# Single CWE (CodeFuse):
-python scripts/evaluation/run_pipeline.py --tool codefuse --cwe 022
+# Aggregate existing metrics and generate comparison + standalone reports
+python3 scripts/evaluation/run_pipeline.py --tool both --cwe all \
+  --stages aggregate,report
 
-# ---- Legacy wrappers (still work, forward to the pipeline) ----
+# Legacy wrappers (still forward to the pipeline)
 ./run_eval.sh                                # CodeQL: SARIF precheck + evaluate/aggregate/report
 bash scripts/evaluation/eval_checker.sh 022  # CodeFuse single CWE
 ```
 
 ---
 
-## ⚡ Unified Pipeline (Recommended in v2.0)
+## ⚡ Unified Pipeline (Recommended in v3.0.0)
 
 `scripts/evaluation/run_pipeline.py` is the manifest-driven main entry. It will:
 
-* Check the tool environment (including the macOS `JAVA_HOME` gate)
-* Run the selected tool(s), or skip straight to evaluation on existing findings
+* Check the tool environment (including the CodeFuse `JAVA_HOME`/JDK gate)
+* Run the selected tool(s), or evaluate existing normalized findings CSV files
 * Evaluate with the v2 core (`vep.eval.v2` metrics + tp/fp/fn/outside-scope CSVs)
 * Aggregate multi-CWE overall metrics (`vep.aggregate.v2`)
 * Output English evaluation report
@@ -203,7 +248,19 @@ experiments/cwe-<ID>/eval/codefuse_eval_v2/ # per-CWE metrics + tp/fp/fn CSVs
 reports/figs/
 reports/report.md
 reports/report_zh.md
+reports/codefuse/                          # standalone CodeFuse-Query report
+reports/codeql/                            # standalone CodeQL report
 ```
+
+Evaluate-only mode reads normalized CSV files, not raw SARIF alone. Existing
+SARIF can be converted with `scripts/evaluation/eval_sarif_findings.py`.
+
+Current `all_non_gt` baseline:
+
+| Tool | TP | FP | FN | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|---:|---:|
+| CodeFuse-Query | 1415 | 552 | 0 | 0.7194 | 1.0000 | 0.8368 |
+| CodeQL | 1415 | 2236 | 0 | 0.3876 | 1.0000 | 0.5586 |
 
 ---
 
@@ -260,19 +317,32 @@ This project uses a standard vulnerability detection evaluation metric system:
 * Supports automatic metric calculation
 * Supports experimental reproduction
 * Supports modular rule management
-* Supports one-click automatic evaluation pipeline (v1.1)
+* Supports a manifest-driven unified evaluation pipeline (v3.0.0)
 * Supports automatic generation of bilingual reports (English/Chinese)
 * Supports performance visualization analysis
 
 ---
 
+# ✅ Tests and CI
+
+```bash
+python -m compileall vep/ scripts/evaluation/ scripts/reporting/ scripts/converters/
+python scripts/verify_manifest.py
+python -m pytest
+```
+
+The current suite contains 156 tests. GitHub Actions runs compile, manifest,
+and pytest checks on Python 3.9 and 3.11. Golden fixtures protect the CWE-328
+`328S` ground-truth behavior.
+
+---
+
 # 🚧 Future Plans
 
-* Support more static analysis tools
-* Add evaluation visualization modules
-* Support automated experiment execution pipelines
-* Support ROC / PR curve analysis
-* Build a vulnerability detection rule benchmark library
+* Reduce false positives while preserving the current zero-FN baseline
+* Add more CWE checkers and static analysis tool adapters
+* Validate the full CodeFuse workflow on Linux
+* Explore path-, field-, and context-sensitive precision improvements
 
 ---
 

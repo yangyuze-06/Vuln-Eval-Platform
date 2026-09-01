@@ -31,7 +31,14 @@
 
 ## 🆕 版本说明
 
-### v2.0（当前版本）
+### v3.0.0（当前版本）
+
+- CodeFuse-Query 与 CodeQL 统一使用 `scripts/evaluation/run_pipeline.py`。
+- 新增工具自动发现和 CodeFuse `JAVA_HOME` 环境门禁。
+- 新增断点续跑、156 个测试、golden fixtures 和 Python 3.9/3.11 CI。
+- 支持双工具联合报告，以及 CodeFuse-Query、CodeQL 独立报告。
+
+### v2.0
 
 - 完成 11 个 CodeFuse-Query / GodelScript Java SAST checker。
 - 建立 `source / helper / taint / sink / sanitizer` 模块化规则框架。
@@ -131,11 +138,7 @@ Vuln-Eval-Lab
 └── README.md
 ```
 
-更多实验流程说明请参考：
-
-```
-experiments/README.md
-```
+更多实验流程说明请参考[统一评估流程](guides/evaluation_workflow.md)。
 
 ---
 
@@ -155,48 +158,107 @@ experiments/README.md
 
 # ⚡ Quick Start
 
+### 获取代码
+
 ```bash
 git clone https://github.com/L1ngSh1/Vuln-Eval-Platform.git
 cd Vuln-Eval-Platform
+```
 
+### macOS
+
+使用 Homebrew 安装 OpenJDK 17，再通过 `brew --prefix` 获取真实 JDK Bundle
+路径；该写法同时兼容 Apple Silicon 和 Intel Mac。
+
+```bash
+brew install openjdk@17
+export JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$JAVA_HOME/bin:$PATH"
+export DB_CODEFUSE="dataset/codefuse-db-mac-fixed"
+python3 scripts/check_codefuse_java_env.py
+```
+
+### Linux
+
+需要安装完整 JDK，而不是只有 JRE。Debian/Ubuntu 示例：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-venv openjdk-17-jdk
+
+export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+export PATH="$JAVA_HOME/bin:$PATH"
+export DB_CODEFUSE="dataset/codefuse-db-linux"
+python3 scripts/check_codefuse_java_env.py
+```
+
+其他 Linux 发行版安装对应的 OpenJDK 17 development package 后，可以沿用
+同一条 `JAVA_HOME` 自动解析命令。
+
+以上数据库目录是按平台给出的本机示例；如果数据库位于其他位置，请将
+`DB_CODEFUSE` 设置为对应绝对路径。
+
+### Python 环境
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
 
-pip install -r requirements.txt
+### 运行评估
 
-# 运行单个 CWE 的评测 (例如 CWE-022)
-bash scripts/evaluation/eval_checker.sh cwe-022
+设置 `DB_CODEFUSE` 后，以下命令在 macOS 和 Linux 上完全一致。
 
-# 或运行一键评估，汇总所有结果
+```bash
+# CodeFuse 全量新鲜回归：执行、评估、聚合、报告
+python3 scripts/evaluation/run_pipeline.py --tool codefuse --cwe all \
+  --db "$DB_CODEFUSE" \
+  --stages run,evaluate,aggregate,report \
+  --no-skip-existing --keep-going
+
+# 聚合已有 metrics，生成联合报告和两份独立报告
+python3 scripts/evaluation/run_pipeline.py --tool both --cwe all \
+  --stages aggregate,report
+
+# 旧入口继续作为兼容 wrapper
 ./run_eval.sh
+bash scripts/evaluation/eval_checker.sh 022
 ```
 
 ---
 
-## ⚡ 一键评估（v1.1 推荐）
+## ⚡ 统一评估 Pipeline（v3.0.0 推荐）
 
-在完成检测并生成 SARIF 文件后：
+`scripts/evaluation/run_pipeline.py` 统一完成：
 
-```bash
-./run_eval.sh
-```
-
-该命令将自动：
-
-* 检测 SARIF 文件是否齐全
-* 汇总各 CWE 指标
-* 生成性能可视化图
-* 输出英文评估报告
-* 输出中文评估报告
+* 工具环境检查和路径发现
+* CodeFuse-Query / CodeQL 执行
+* JSON / SARIF 标准化
+* v2 评估与多 CWE 聚合
+* 中英文联合报告和单工具报告
 
 结果输出位置：
 
 ```
-reports/data/metrics.json
+reports/data/metrics_v2_codefuse_all.json
+reports/data/metrics_v2_codeql_all.json
 reports/figs/
 reports/report.md
 reports/report_zh.md
+reports/codefuse/                         # CodeFuse-Query 独立报告
+reports/codeql/                           # CodeQL 独立报告
 ```
+
+evaluate-only 模式读取的是 normalized CSV，而不是只有 SARIF 就能直接评估。
+已有 SARIF 可使用 `scripts/evaluation/eval_sarif_findings.py` 转换和评估。
+
+当前 `all_non_gt` 基线：
+
+| 工具 | TP | FP | FN | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|---:|---:|
+| CodeFuse-Query | 1415 | 552 | 0 | 0.7194 | 1.0000 | 0.8368 |
+| CodeQL | 1415 | 2236 | 0 | 0.3876 | 1.0000 | 0.5586 |
 
 ---
 
@@ -253,19 +315,31 @@ reports/report_zh.md
 * 支持自动指标统计
 * 支持实验复现
 * 支持规则模块化管理
-* 支持一键自动评估 pipeline（v1.1）
+* 支持 manifest 驱动的统一评估 pipeline（v3.0.0）
 * 支持自动生成中英双语报告
 * 支持性能可视化分析
 
 ---
 
+# ✅ 测试与 CI
+
+```bash
+python -m compileall vep/ scripts/evaluation/ scripts/reporting/ scripts/converters/
+python scripts/verify_manifest.py
+python -m pytest
+```
+
+当前共有 156 个测试。GitHub Actions 在 Python 3.9/3.11 上执行编译、manifest
+验证和 pytest；golden fixtures 保护 CWE-328 的 `328S` ground-truth 语义。
+
+---
+
 # 🚧 未来规划
 
-* 支持更多静态分析工具
-* 增加评测可视化模块
-* 支持自动实验执行流水线
-* 支持 ROC / PR 曲线分析
-* 构建漏洞检测规则基准库
+* 在保持当前零 FN 基线的前提下降低 FP
+* 扩展更多 CWE checker 和静态分析工具 adapter
+* 在 Linux 上补充 CodeFuse 全链路复现
+* 研究 path、field 和 context sensitivity 等精度能力
 
 ---
 
