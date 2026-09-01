@@ -1,5 +1,8 @@
 # CodeFuse 安全 Checker 模块化重构计划
 
+> **文档状态：已完成并归档。** 本文的规则模块化 Phase 1～5 均已交付；当前路线见 `docs/current/roadmap.md`。
+
+
 ## 1. 背景
 
 CWE-022、CWE-078、CWE-079 最初都是单文件实验脚本。三者都加载 `coref_java_src.db`，以 Java Servlet/request API 作为主要 taint source，并通过局部变量、赋值、实参到形参、foreach、receiver、AST upward、call-result、constructor-result、return-to-call 等规则传播 taint。

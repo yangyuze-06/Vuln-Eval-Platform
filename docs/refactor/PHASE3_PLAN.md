@@ -1,5 +1,8 @@
 # Phase 3 计划：工具抽象层与统一实验入口
 
+> **文档状态：已完成并归档（2026-08-31）。** 当前 V3 状态见 `docs/current/refactor_status_report.md`。
+
+
 创建时间：2026-08-30
 前置阶段：Phase 1 ✅ / Phase 2（A~D）✅ / Phase 2F 报告系统双工具化 ✅（2026-07-04）
 对应重构路线：`docs/current/refactor_status_report.md` 中的 **P2 统一实验入口**

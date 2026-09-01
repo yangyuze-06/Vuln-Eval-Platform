@@ -34,6 +34,18 @@ GOOD:
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 ```
 
+For the current V3 macOS baseline (OpenJDK 17):
+
+```bash
+export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+export PATH="$JAVA_HOME/bin:$PATH"
+python3 scripts/check_codefuse_java_env.py
+```
+
+When persisting this in `~/.zshrc`, make sure no later `JAVA_HOME` assignment
+overrides it with `/opt/homebrew/opt/openjdk@17`. Check the effective login-shell
+value with `zsh -lic 'echo "$JAVA_HOME"'`.
+
 ## Recommended setup
 
 ```bash

@@ -1,5 +1,8 @@
 # Phase 4 计划：测试体系与 CI
 
+> **文档状态：已完成并归档（2026-08-31）。** 当前 V3 状态见 `docs/current/refactor_status_report.md`。
+
+
 创建时间：2026-08-31
 前置阶段：Phase 1 ✅ / Phase 2（A~D, F）✅ / Phase 3（M3.1~M3.4）✅（2026-08-31，parity gate 通过）
 对应重构路线：`docs/current/refactor_status_report.md` 中的 **P3 测试体系 / golden regression**
