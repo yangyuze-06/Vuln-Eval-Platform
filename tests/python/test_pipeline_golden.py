@@ -162,6 +162,14 @@ class TestCliErrorPaths:
         assert proc.returncode == 2
         assert "both" in (proc.stdout + proc.stderr)
 
+    def test_aggregate_name_with_both_tools_exits_2(self):
+        proc = self.run_cli(
+            "--tool", "both", "--cwe", "all",
+            "--stages", "aggregate", "--aggregate-name", "combined.json",
+        )
+        assert proc.returncode == 2
+        assert "--aggregate-name" in (proc.stdout + proc.stderr)
+
     def test_report_without_aggregate_exits_1(self, tmp_path):
         ws = build_workspace(tmp_path)
         proc = self.run_cli(

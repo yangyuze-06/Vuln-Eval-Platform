@@ -15,7 +15,7 @@ from typing import List
 
 import numpy as np
 
-from vep.reporting.report_generator import ReportData
+from vep.reporting.report_generator import ReportData, tool_display_name
 
 # Tool color palette — harmonious, distinct, accessible
 TOOL_COLORS = {
@@ -104,7 +104,9 @@ def generate_all_plots(report: ReportData, out_dir: Path) -> List[Path]:
 
             offset = (i - (n_tools - 1) / 2) * width
             color = _get_tool_color(tool)["primary"]
-            bars = ax.bar(x + offset, values, width, label=tool, color=color)
+            bars = ax.bar(
+                x + offset, values, width, label=tool_display_name(tool), color=color
+            )
 
             for bar in bars:
                 h = bar.get_height()
@@ -155,7 +157,11 @@ def generate_all_plots(report: ReportData, out_dir: Path) -> List[Path]:
 
         ax.set_xticks(x)
         ax.set_xticklabels(cwes, rotation=45, ha="right")
-        ax.set_title(f"Detection Counts — {tool}", fontsize=13, weight="bold")
+        ax.set_title(
+            f"Detection Counts — {tool_display_name(tool)}",
+            fontsize=13,
+            weight="bold",
+        )
         ax.legend()
 
     fig.suptitle("Detection Counts by CWE", fontsize=15, weight="bold", y=1.02)
@@ -180,7 +186,13 @@ def generate_all_plots(report: ReportData, out_dir: Path) -> List[Path]:
         values = [getattr(tm, mk, 0.0) if tm else 0.0 for mk in metric_keys]
         offset = (i - (n_tools - 1) / 2) * width_overall
         color = _get_tool_color(tool)["primary"]
-        bars = ax.bar(x_overall + offset, values, width_overall, label=tool, color=color)
+        bars = ax.bar(
+            x_overall + offset,
+            values,
+            width_overall,
+            label=tool_display_name(tool),
+            color=color,
+        )
 
         for bar in bars:
             h = bar.get_height()
@@ -219,7 +231,14 @@ def generate_all_plots(report: ReportData, out_dir: Path) -> List[Path]:
                 tm = entry.tools.get(tool)
                 values.append(tm.precision if tm else 0.0)
             color = _get_tool_color(tool)["primary"]
-            ax.plot(cwes, values, marker="o", linewidth=2, label=tool, color=color)
+            ax.plot(
+                cwes,
+                values,
+                marker="o",
+                linewidth=2,
+                label=tool_display_name(tool),
+                color=color,
+            )
 
             for xi, (cwe, v) in enumerate(zip(cwes, values)):
                 ax.annotate(

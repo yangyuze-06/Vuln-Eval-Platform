@@ -19,6 +19,17 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 
+TOOL_DISPLAY_NAMES = {
+    "codefuse": "CodeFuse-Query",
+    "codeql": "CodeQL",
+}
+
+
+def tool_display_name(tool: str) -> str:
+    """Return a user-facing label without changing the machine tool ID."""
+    return TOOL_DISPLAY_NAMES.get(tool, tool)
+
+
 @dataclass
 class ToolMetrics:
     """Normalized metrics for a single tool on a single CWE (or overall)."""

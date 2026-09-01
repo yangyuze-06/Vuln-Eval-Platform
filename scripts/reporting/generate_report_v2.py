@@ -33,7 +33,12 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from vep.reporting.report_generator import load_metrics, merge_report_data, ReportData
+from vep.reporting.report_generator import (
+    load_metrics,
+    merge_report_data,
+    ReportData,
+    tool_display_name,
+)
 from vep.reporting.plot_generator import generate_all_plots
 from vep.reporting.text_report import write_reports
 
@@ -216,13 +221,13 @@ def main() -> int:
     print("\n" + "=" * 60)
     print("VEP Report Generator v2 — Phase 2F")
     print("=" * 60)
-    print(f"Tools:   {', '.join(report.tools)}")
+    print(f"Tools:   {', '.join(tool_display_name(tool) for tool in report.tools)}")
     print(f"CWEs:    {len(report.cwes)}")
     print(f"Output:  {out_dir}")
     for tool in report.tools:
         tm = report.overall.get(tool)
         if tm:
-            print(f"\n  {tool}:")
+            print(f"\n  {tool_display_name(tool)}:")
             print(f"    Precision: {tm.precision:.4f}")
             print(f"    Recall:    {tm.recall:.4f}")
             print(f"    F1:        {tm.f1:.4f}")

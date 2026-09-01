@@ -86,6 +86,8 @@ reports/data/metrics.json
 reports/figs/
 reports/report.md
 reports/report_zh.md
+reports/codefuse/
+reports/codeql/
 reports/*discrepancy*.md
 reports/*missing-testcases*
 reports/*rootcause*.md

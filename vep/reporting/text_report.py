@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 from typing import List, Optional
 
-from vep.reporting.report_generator import ReportData, ToolMetrics
+from vep.reporting.report_generator import ReportData, ToolMetrics, tool_display_name
 
 
 # ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ def _pct(v: float) -> str:
 
 def _tool_overall_block_en(tool: str, tm: ToolMetrics) -> str:
     return (
-        f"### {tool}\n\n"
+        f"### {tool_display_name(tool)}\n\n"
         f"| Metric | Value |\n"
         f"|---|---|\n"
         f"| Precision | {_fmt(tm.precision)} ({_pct(tm.precision)}) |\n"
@@ -42,7 +42,7 @@ def _tool_overall_block_en(tool: str, tm: ToolMetrics) -> str:
 
 def _tool_overall_block_zh(tool: str, tm: ToolMetrics) -> str:
     return (
-        f"### {tool}\n\n"
+        f"### {tool_display_name(tool)}\n\n"
         f"| 指标 | 值 |\n"
         f"|---|---|\n"
         f"| 准确率（Precision） | {_fmt(tm.precision)} ({_pct(tm.precision)}) |\n"
@@ -69,7 +69,8 @@ def _cwe_comparison_table(report: ReportData) -> str:
     header = "| CWE |"
     sep = "|---|"
     for tool in tools:
-        header += f" {tool} P | {tool} R | {tool} F1 |"
+        label = tool_display_name(tool)
+        header += f" {label} P | {label} R | {label} F1 |"
         sep += "---|---|---|"
     header += "\n"
     sep += "\n"
@@ -119,7 +120,7 @@ def generate_english_report(report: ReportData) -> str:
     today = date.today().isoformat()
     tools = report.tools
     n_cwes = len(report.cwes)
-    tool_list = ", ".join(tools)
+    tool_list = ", ".join(tool_display_name(tool) for tool in tools)
 
     sections: List[str] = []
 
@@ -143,7 +144,7 @@ def generate_english_report(report: ReportData) -> str:
         for tool, info in bw.items():
             best_str = ", ".join(f"{c} ({_fmt(p)})" for c, p in info["best"])
             worst_str = ", ".join(f"{c} ({_fmt(p)})" for c, p in info["worst"])
-            sections.append(f"**{tool}:**\n")
+            sections.append(f"**{tool_display_name(tool)}:**\n")
             sections.append(f"- Best precision: {best_str}\n")
             sections.append(f"- Lowest precision: {worst_str}\n\n")
 
@@ -169,7 +170,7 @@ def generate_english_report(report: ReportData) -> str:
         tm = report.overall.get(tool)
         if tm:
             sections.append(
-                f"**{tool}** achieved a recall of **{_fmt(tm.recall)}** "
+                f"**{tool_display_name(tool)}** achieved a recall of **{_fmt(tm.recall)}** "
                 f"with a precision of **{_fmt(tm.precision)}** "
                 f"(F1 = {_fmt(tm.f1)}).\n\n"
             )
@@ -199,7 +200,7 @@ def generate_chinese_report(report: ReportData) -> str:
     today = date.today().isoformat()
     tools = report.tools
     n_cwes = len(report.cwes)
-    tool_list = ", ".join(tools)
+    tool_list = ", ".join(tool_display_name(tool) for tool in tools)
 
     sections: List[str] = []
 
@@ -223,7 +224,7 @@ def generate_chinese_report(report: ReportData) -> str:
         for tool, info in bw.items():
             best_str = ", ".join(f"{c}（{_fmt(p)}）" for c, p in info["best"])
             worst_str = ", ".join(f"{c}（{_fmt(p)}）" for c, p in info["worst"])
-            sections.append(f"**{tool}：**\n")
+            sections.append(f"**{tool_display_name(tool)}：**\n")
             sections.append(f"- 准确率最高：{best_str}\n")
             sections.append(f"- 准确率最低：{worst_str}\n\n")
 
@@ -248,7 +249,7 @@ def generate_chinese_report(report: ReportData) -> str:
         tm = report.overall.get(tool)
         if tm:
             sections.append(
-                f"**{tool}** 达到了 **{_fmt(tm.recall)}** 的召回率，"
+                f"**{tool_display_name(tool)}** 达到了 **{_fmt(tm.recall)}** 的召回率，"
                 f"准确率为 **{_fmt(tm.precision)}**"
                 f"（F1 = {_fmt(tm.f1)}）。\n\n"
             )

@@ -135,6 +135,12 @@ def main() -> int:
     if args.eval_dir_name and args.tool == "both":
         print("❌ --eval-dir-name 不能与 --tool both 同用。")
         return 2
+    if args.aggregate_name and args.tool == "both":
+        print(
+            "❌ --aggregate-name 不能与 --tool both 同用；"
+            "请使用默认的分工具聚合文件名。"
+        )
+        return 2
 
     db_overrides = {"codefuse": None, "codeql": None}
     if args.db:

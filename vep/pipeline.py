@@ -58,8 +58,26 @@ class PipelineOptions:
     run_timeout_seconds: int = 3600
 
 
+@dataclass
+class ToolPipelineResult:
+    """Outcome of one tool branch, including its aggregate artifact."""
+
+    tool: str
+    failures: List[str] = field(default_factory=list)
+    aggregate_path: Optional[Path] = None
+
+
 def run_pipeline(options: PipelineOptions, project_root: Path) -> int:
     """Execute the selected stages. Returns 0 on success, 1 on failures."""
+    if options.tool == "both" and options.aggregate_name:
+        raise ValueError(
+            "--aggregate-name 不能与 --tool both 同用；"
+            "请使用默认的分工具聚合文件名。"
+        )
+    if "report" in options.stages and "aggregate" not in options.stages:
+        print("❌ report requires the aggregate stage")
+        return 1
+
     manifest = load_manifest(options.manifest_file, project_root)
     tools_config = load_tools_config(options.tools_config_file, project_root)
     entries = manifest.resolve(options.cwe_tokens)
@@ -71,10 +89,16 @@ def run_pipeline(options: PipelineOptions, project_root: Path) -> int:
     print("=" * 60)
 
     failures: List[str] = []
+    tool_results: Dict[str, ToolPipelineResult] = {}
     for tool_name in tool_names:
-        failures.extend(
-            _run_single_tool(tool_name, options, manifest, tools_config, entries, project_root)
+        result = _run_single_tool(
+            tool_name, options, manifest, tools_config, entries, project_root
         )
+        tool_results[tool_name] = result
+        failures.extend(result.failures)
+
+    if "report" in options.stages:
+        failures.extend(_generate_reports(tool_names, tool_results, options, project_root))
 
     if failures:
         print(f"\n❌ Pipeline finished with {len(failures)} failure(s):")
@@ -92,8 +116,9 @@ def _run_single_tool(
     tools_config: ToolsConfig,
     entries: List[CweEntry],
     project_root: Path,
-) -> List[str]:
+) -> ToolPipelineResult:
     failures: List[str] = []
+    result = ToolPipelineResult(tool=tool_name, failures=failures)
     print(f"\n########## {tool_name} ##########")
 
     tool = _build_tool(tool_name, options, tools_config, project_root)
@@ -103,10 +128,7 @@ def _run_single_tool(
         fatal = _check_environment(tool)
         if fatal:
             failures.append(f"{tool_name}: environment check failed")
-            return failures
-    if "report" in options.stages and "aggregate" not in options.stages:
-        failures.append(f"{tool_name}: report requires the aggregate stage")
-        return failures
+            return result
 
     evaluated: List[CweEntry] = []
     for index, entry in enumerate(entries, start=1):
@@ -129,14 +151,14 @@ def _run_single_tool(
             if not _run_tool(tool, entry, db_path, findings_csv, tag):
                 failures.append(f"{tool_name} {entry.name}: run/standardize failed")
                 if not options.keep_going:
-                    return failures
+                    return result
                 continue
 
         if "evaluate" in options.stages:
             if not _evaluate(tool_name, entry, findings_csv, manifest, options, tag):
                 failures.append(f"{tool_name} {entry.name}: evaluation failed")
                 if not options.keep_going:
-                    return failures
+                    return result
                 continue
         evaluated.append(entry)
 
@@ -144,11 +166,10 @@ def _run_single_tool(
         if not evaluated:
             failures.append(f"{tool_name}: nothing to aggregate")
         else:
-            _aggregate(tool_name, evaluated, manifest, options, project_root)
-
-    if "report" in options.stages:
-        _report(tool_name, evaluated, manifest, options, project_root)
-    return failures
+            result.aggregate_path = _aggregate(
+                tool_name, evaluated, manifest, options, project_root
+            )
+    return result
 
 
 def _build_tool(
@@ -252,7 +273,7 @@ def _aggregate(
     manifest: Manifest,
     options: PipelineOptions,
     project_root: Path,
-) -> None:
+) -> Path:
     metrics_list = []
     for entry in entries:
         metrics_path = _eval_dir(entry, tool_name, options) / "metrics.json"
@@ -268,32 +289,81 @@ def _aggregate(
     print(f"\n[{tool_name}] 聚合 {aggregate['included_count']} 个 CWE → {out_path}")
     print(f"[{tool_name}] Overall: TP={overall['tp']} FP={overall['fp']} FN={overall['fn']}"
           f" P={overall['precision']:.4f} R={overall['recall']:.4f} F1={overall['f1']:.4f}")
+    return out_path
 
 
-def _report(
-    tool_name: str,
-    entries: List[CweEntry],
-    manifest: Manifest,
+def _generate_reports(
+    tool_names: List[str],
+    tool_results: Dict[str, ToolPipelineResult],
     options: PipelineOptions,
     project_root: Path,
-) -> None:
-    out_root = options.aggregate_out_root
-    if not out_root.is_absolute():
-        out_root = project_root / out_root
-    aggregate_path = out_root / (
-        options.aggregate_name or _aggregate_name(tool_name, entries, manifest, options)
-    )
+) -> List[str]:
+    """Generate compatible single-tool reports or a dual-tool report set."""
+    failures: List[str] = []
     report_dir = options.report_out_dir
     if not report_dir.is_absolute():
         report_dir = project_root / report_dir
+
+    available = {
+        name: result.aggregate_path
+        for name, result in tool_results.items()
+        if result.aggregate_path is not None
+    }
+
+    if len(tool_names) == 1:
+        tool_name = tool_names[0]
+        aggregate_path = available.get(tool_name)
+        if aggregate_path is None:
+            return [f"{tool_name}: report skipped because aggregate output is unavailable"]
+        failure = _run_report([aggregate_path], report_dir, project_root)
+        return [failure] if failure else []
+
+    # In dual-tool mode, keep standalone reports for every successful branch.
+    for tool_name in tool_names:
+        aggregate_path = available.get(tool_name)
+        if aggregate_path is None:
+            continue
+        failure = _run_report([aggregate_path], report_dir / tool_name, project_root)
+        if failure:
+            failures.append(failure)
+
+    missing = [name for name in tool_names if name not in available]
+    if missing:
+        failures.append(
+            "combined report not generated; missing aggregate output for: "
+            + ", ".join(missing)
+        )
+        return failures
+
+    combined_paths = [available[name] for name in tool_names]
+    failure = _run_report(combined_paths, report_dir, project_root)
+    if failure:
+        failures.append(failure)
+    return failures
+
+
+def _run_report(
+    aggregate_paths: List[Path],
+    report_dir: Path,
+    project_root: Path,
+) -> Optional[str]:
     cmd = [
         sys.executable,
         str(project_root / "scripts/reporting/generate_report_v2.py"),
-        "--metrics", str(aggregate_path),
+        "--metrics", *(str(path) for path in aggregate_paths),
         "--out-dir", str(report_dir),
     ]
-    print(f"[{tool_name}] 生成报告: {' '.join(cmd[1:])}")
-    subprocess.run(cmd, check=False)
+    print(f"[report] 生成报告: {' '.join(cmd[1:])}")
+    try:
+        proc = subprocess.run(cmd, check=False)
+    except OSError as exc:
+        return f"report generation failed for {report_dir}: {exc}"
+    if proc.returncode != 0:
+        return (
+            f"report generation failed for {report_dir} "
+            f"(returncode={proc.returncode})"
+        )
+    return None
 
 
 def _eval_dir(entry: CweEntry, tool_name: str, options: PipelineOptions) -> Path:
